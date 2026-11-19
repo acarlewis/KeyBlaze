@@ -331,6 +331,12 @@ async function handle(op, p) {
       const api = ext.isActive ? ext.exports : await ext.activate();
       return api.getSettings();
     }
+    case 'keyblazeEnv': {
+      const ext = vscode.extensions.getExtension(p.id);
+      const api = ext.isActive ? ext.exports : await ext.activate();
+      api.setEnvironmentOverride(p.override ?? {});
+      return { ok: true };
+    }
     case 'burstStats':
       return { burstGenMs: burstGenMs.splice(0) };
     default:

@@ -575,3 +575,170 @@ suite('Control Panel', () => {
     await waitFor(() => !api.getStats().controlPanel.open, 3000, 'disposed');
   });
 });
+
+suite('Accessibility, focus and performance policy', () => {
+  setup(resetSettings);
+  teardown(async () => {
+    const api = await getApi();
+    api.setEnvironmentOverride({ windowFocused: true });
+    await vscode.workspace
+      .getConfiguration('editor')
+      .update('accessibilitySupport', undefined, vscode.ConfigurationTarget.Global);
+    await vscode.workspace
+      .getConfiguration('workbench')
+      .update('reduceMotion', undefined, vscode.ConfigurationTarget.Global);
+    await closeAllEditors();
+  });
+  suiteTeardown(resetSettings);
+
+  async function typeIn(text: string) {
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await typeText(text, 60);
+  }
+
+  test('screen reader optimisation pauses effects and combos, and shows a paused status', async () => {
+    const api = await getApi();
+    await vscode.workspace
+      .getConfiguration('editor')
+      .update('accessibilitySupport', 'on', vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getStats().policy.reason === 'screenReader', 3000, 'policy');
+    const before = api.getStats().totalBursts;
+    await typeIn('abc');
+    await wait(150);
+    assert.strictEqual(api.getStats().totalBursts, before);
+    assert.strictEqual(api.getStats().combo.count, 0);
+    assert.ok(api.getStats().statusText.includes('debug-pause'));
+  });
+
+  test('disableWithScreenReader=false keeps effects with a screen reader', async () => {
+    const api = await getApi();
+    await config().update(
+      'accessibility.disableWithScreenReader',
+      false,
+      vscode.ConfigurationTarget.Global,
+    );
+    await vscode.workspace
+      .getConfiguration('editor')
+      .update('accessibilitySupport', 'on', vscode.ConfigurationTarget.Global);
+    await wait(200);
+    assert.ok(api.getStats().policy.active);
+  });
+
+  test('reduced motion renders tiny calm bursts and celebrations without shake', async () => {
+    const api = await getApi();
+    await vscode.workspace
+      .getConfiguration('workbench')
+      .update('reduceMotion', 'on', vscode.ConfigurationTarget.Global);
+    await config().update('screenShake.enabled', true, vscode.ConfigurationTarget.Global);
+    await config().update('combo.milestones', [3], vscode.ConfigurationTarget.Global);
+    await config().update('combo.resetTime', 800, vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getStats().policy.reducedMotion, 3000, 'reduced motion');
+    await wait(900);
+    await typeIn('ab');
+    const last = api.getStats().lastBurst;
+    assert.strictEqual(last?.effect, 'minimal');
+    assert.ok((last?.particleCount ?? 99) <= 4);
+    const celebrations = api.getStats().celebrations;
+    await typeText('c', 60);
+    await waitFor(() => api.getStats().celebrations === celebrations + 1, 2000, 'milestone');
+    assert.strictEqual(api.getStats().lastBurst?.shaken, false);
+  });
+
+  test('respectReducedMotion=false ignores the reduced-motion preference', async () => {
+    const api = await getApi();
+    await config().update(
+      'accessibility.respectReducedMotion',
+      false,
+      vscode.ConfigurationTarget.Global,
+    );
+    await vscode.workspace
+      .getConfiguration('workbench')
+      .update('reduceMotion', 'on', vscode.ConfigurationTarget.Global);
+    await wait(200);
+    assert.strictEqual(api.getStats().policy.reducedMotion, false);
+  });
+
+  test('unfocused window: no new effects, combos or cursor auras', async () => {
+    const api = await getApi();
+    await config().update('cursor.effect', 'glow', vscode.ConfigurationTarget.Global);
+    api.setEnvironmentOverride({ windowFocused: false });
+    await waitFor(() => api.getStats().policy.reason === 'unfocused', 2000, 'policy');
+    const before = api.getStats().totalBursts;
+    const comboBefore = api.getStats().combo.count; // losing focus pauses counting; it does not wipe a streak
+    await typeIn('xy');
+    await wait(200);
+    assert.strictEqual(api.getStats().totalBursts, before);
+    assert.ok(api.getStats().combo.count <= comboBefore);
+    assert.ok(!api.getStats().cursorEffects.auraVisible);
+  });
+
+  test('very fast typing shrinks bursts', async () => {
+    const api = await getApi();
+    await config().update('particleCount', 30, vscode.ConfigurationTarget.Global);
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await typeText('abcdefghijklmnopqrstuvwxyz'); // far above 24 keystrokes/s
+    assert.ok((api.getStats().lastBurst?.particleCount ?? 30) < 30);
+  });
+});
+
+suite('Sound', () => {
+  setup(resetSettings);
+  suiteTeardown(async () => {
+    await resetSettings();
+    await closeAllEditors();
+  });
+
+  async function soundView() {
+    const api = await getApi();
+    await vscode.commands.executeCommand('keyblaze.openSoundView');
+    await waitFor(() => api.getStats().sound.resolved, 10000, 'sound view resolved');
+    return api;
+  }
+
+  test('Open Sound View enables sound and resolves the webview view', async () => {
+    const api = await soundView();
+    assert.strictEqual(api.getSettings()['sound.enabled'], true);
+  });
+
+  test('milestones send sounds while allowed; nothing is sent with a screen reader', async () => {
+    const api = await soundView();
+    await config().update('combo.milestones', [3], vscode.ConfigurationTarget.Global);
+    await config().update('combo.resetTime', 800, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await wait(900);
+    const sent = api.getStats().sound.sent;
+    await typeText('abc', 40);
+    await waitFor(() => api.getStats().sound.sent === sent + 1, 2000, 'milestone sound');
+
+    await vscode.workspace
+      .getConfiguration('editor')
+      .update('accessibilitySupport', 'on', vscode.ConfigurationTarget.Global);
+    try {
+      await wait(900);
+      const pausedSent = api.getStats().sound.sent;
+      await typeText('def', 40);
+      await wait(200);
+      assert.strictEqual(api.getStats().sound.sent, pausedSent);
+    } finally {
+      await vscode.workspace
+        .getConfiguration('editor')
+        .update('accessibilitySupport', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
+
+  test('everyKeystroke mode sends rate-limited keystroke sounds', async () => {
+    const api = await soundView();
+    await config().update('sound.mode', 'everyKeystroke', vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    const sent = api.getStats().sound.sent;
+    await typeText('abcdef'); // faster than the 45 ms minimum gap
+    const delta = api.getStats().sound.sent - sent;
+    assert.ok(delta >= 1 && delta < 6, `${delta}`);
+  });
+});

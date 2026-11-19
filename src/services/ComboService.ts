@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { Milestone } from '../core/ComboManager';
 import { ComboManager } from '../core/ComboManager';
+import type { EnvironmentService } from './EnvironmentService';
 import type { SettingsService } from './SettingsService';
 import type { TypingDetector } from './TypingDetector';
 
@@ -41,11 +42,19 @@ export class ComboService implements vscode.Disposable {
     private readonly settings: SettingsService,
     detector: TypingDetector,
     private readonly memento?: vscode.Memento,
+    private readonly env?: EnvironmentService,
   ) {
     this.savedBest = memento?.get<number>(BEST_KEY, 0) ?? 0;
     this.manager = new ComboManager(this.config(), Date.now, this.savedBest);
     this.disposables.push(
       detector.onKeystroke((e) => this.onKeystroke(e.editor, e.positions)),
+      ...(env
+        ? [
+            env.onDidChange((policy) => {
+              if (!policy.active && policy.reason === 'screenReader') this.reset();
+            }),
+          ]
+        : []),
       settings.onDidChange(({ settings: s, changed }) => {
         this.manager.configure(this.config());
         if (
@@ -80,6 +89,7 @@ export class ComboService implements vscode.Disposable {
   private onKeystroke(editor: vscode.TextEditor, positions: readonly vscode.Position[]): void {
     const s = this.settings.get();
     if (!s.enabled || !s['combo.enabled']) return;
+    if (this.env && !this.env.policy.active) return;
     const hit = this.manager.hit();
     const snap = this.manager.snapshot();
     const change: ComboChange = {

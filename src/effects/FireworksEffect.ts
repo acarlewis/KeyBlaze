@@ -94,7 +94,7 @@ function shell(
       life: life * between(rng, 0.75, 1),
       color: pattern === 'double' && i % 2 === 0 ? colorB : colorA,
       shape,
-      glow: params.glow && i % 2 === 0 ? 0.6 : 0,
+      glow: params.glow && i % 3 === 0 ? 0.6 : 0, // glow halos are the costliest thing to rasterise
       flicker: 0.35,
       alignToVelocity: shape === 'spark',
     });

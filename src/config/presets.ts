@@ -82,7 +82,7 @@ export const PRESETS: Readonly<Record<PresetId, PresetDefinition>> = {
     values: {
       effect: 'fireworks',
       intensity: 8,
-      particleCount: 30,
+      particleCount: 24,
       particleSize: 3,
       particleSpeed: 1.4,
       particleLifetime: 900,

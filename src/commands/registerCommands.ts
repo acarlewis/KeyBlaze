@@ -15,6 +15,7 @@ export const COMMAND_IDS = {
   disable: 'keyblaze.disable',
   toggle: 'keyblaze.toggle',
   openControlPanel: 'keyblaze.openControlPanel',
+  openSoundView: 'keyblaze.openSoundView',
   changeEffect: 'keyblaze.changeEffect',
   nextEffect: 'keyblaze.nextEffect',
   previousEffect: 'keyblaze.previousEffect',
@@ -75,6 +76,10 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
     register(COMMAND_IDS.disable, () => settings.update('enabled', false)),
     register(COMMAND_IDS.toggle, () => settings.update('enabled', !settings.get().enabled)),
     register(COMMAND_IDS.openControlPanel, () => deps.controlPanel.show()),
+    register(COMMAND_IDS.openSoundView, async () => {
+      if (!settings.get()['sound.enabled']) await settings.update('sound.enabled', true);
+      await vscode.commands.executeCommand('keyblaze.sound.focus');
+    }),
 
     register(COMMAND_IDS.nextEffect, () => setEffect(cycle(EFFECT_IDS, settings.get().effect, 1))),
     register(COMMAND_IDS.previousEffect, () =>

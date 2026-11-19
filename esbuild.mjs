@@ -20,12 +20,12 @@ const problemMatcherPlugin = {
 };
 
 const webview = await esbuild.context({
-  entryPoints: ['src/webview/controlPanel.ts'],
+  entryPoints: { controlPanel: 'src/webview/controlPanel.ts', sound: 'src/webview/sound.ts' },
   bundle: true,
   format: 'iife',
   platform: 'browser',
   target: 'es2022',
-  outfile: 'dist/webview/controlPanel.js',
+  outdir: 'dist/webview',
   sourcemap: !production,
   sourcesContent: false,
   minify: production,

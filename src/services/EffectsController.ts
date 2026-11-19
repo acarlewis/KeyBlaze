@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import type { EngineSettings } from '../core/AnimationEngine';
 import { AnimationEngine } from '../core/AnimationEngine';
 import type { Milestone } from '../core/ComboManager';
+import { reducedMotionOverrides } from '../core/motion';
+import { TypingRate, budgetForRate } from '../core/typingRate';
 import type { BurstTrack } from '../core/BurstTrack';
 import type { AnchorDecision, EffectVariant, Layout } from '../core/placement';
 import { decideAnchor, layoutBurst } from '../core/placement';
@@ -12,6 +14,7 @@ import { svgToDataUri } from '../render/svg';
 import type { Logger } from '../utils/logger';
 import { safely } from '../utils/logger';
 import type { DecorationSlotPool, PlacedImage } from './DecorationRenderer';
+import type { EnvironmentService } from './EnvironmentService';
 import { caretContext } from './EditorMetrics';
 import type { InlayHintTracker } from './InlayHintTracker';
 import type { SettingsService } from './SettingsService';
@@ -22,6 +25,9 @@ const MAX_BURST_CURSORS = 8;
 
 /** Diagnostics about the most recent burst (exposed through the extension's test API). */
 export interface LastBurstInfo {
+  readonly effect: string;
+  readonly particleCount: number;
+  readonly shaken: boolean;
   readonly decisions: readonly AnchorDecision[];
   readonly layouts: readonly Layout[];
   readonly svgBytes: number;
@@ -36,6 +42,7 @@ export class EffectsController implements vscode.Disposable {
   private burstCount = 0;
   private nonce = 0;
   private last: LastBurstInfo | undefined;
+  private readonly typingRate = new TypingRate();
 
   constructor(
     private readonly settings: SettingsService,
@@ -43,8 +50,17 @@ export class EffectsController implements vscode.Disposable {
     private readonly pool: DecorationSlotPool,
     private readonly logger: Logger,
     private readonly inlayHints?: InlayHintTracker,
+    private readonly env?: EnvironmentService,
     private readonly engine = new AnimationEngine(),
   ) {
+    if (env) {
+      this.disposables.push(
+        env.onDidChange((policy) => {
+          // Screen reader or disabled: remove everything now. Unfocused: let running bursts finish.
+          if (!policy.active && policy.reason !== 'unfocused') this.pool.clearAll();
+        }),
+      );
+    }
     this.disposables.push(
       detector.onKeystroke((e) =>
         safely(logger, 'Keystroke effect failed', () => this.onKeystroke(e)),
@@ -95,8 +111,16 @@ export class EffectsController implements vscode.Disposable {
     shake?: { amplitude: number; durationMs: number },
   ): void {
     const s = this.settings.get();
-    if (!s.enabled) return;
+    const policy = this.env?.policy;
+    if (!s.enabled || (policy && !policy.active)) return;
     this.engine.admit(s, true);
+    if (policy?.reducedMotion) {
+      this.burst(editor, positions, {
+        ...reducedMotionOverrides(s),
+        particleCount: Math.min(6, s.particleCount),
+      });
+      return;
+    }
     const boost = 1 + 0.25 * (milestone.tier + 1);
     this.burst(
       editor,
@@ -116,9 +140,27 @@ export class EffectsController implements vscode.Disposable {
 
   private onKeystroke(e: KeystrokeEvent): void {
     const s = this.settings.get();
-    if (!s.enabled) return;
-    if (!this.engine.admit(s)) return; // paced: combos (Phase 5) still count every keystroke
-    this.burst(e.editor, e.positions);
+    const policy = this.env?.policy;
+    if (!s.enabled || (policy && !policy.active)) return;
+    this.typingRate.hit();
+    if (!this.engine.admit(s)) return; // paced: combos still count every keystroke
+    if (policy?.reducedMotion) {
+      this.burst(e.editor, e.positions, reducedMotionOverrides(s));
+      return;
+    }
+    // Very fast typing: smaller bursts keep the renderer inside its budget.
+    const budget = budgetForRate(this.typingRate.rate());
+    // Fewer particles and a shorter life: fewer animated images on screen at once.
+    this.burst(
+      e.editor,
+      e.positions,
+      budget < 1
+        ? {
+            particleCount: Math.max(1, Math.round(s.particleCount * budget)),
+            particleLifetime: Math.max(300, Math.round(s.particleLifetime * (0.5 + 0.5 * budget))),
+          }
+        : {},
+    );
   }
 
   private burst(
@@ -174,7 +216,14 @@ export class EffectsController implements vscode.Disposable {
 
     if (this.pool.show(editor, images, duration)) {
       this.burstCount++;
-      this.last = { decisions: cursors.map((c) => c.decision), layouts, svgBytes };
+      this.last = {
+        effect: s.effect,
+        particleCount: s.particleCount,
+        shaken: shake !== undefined,
+        decisions: cursors.map((c) => c.decision),
+        layouts,
+        svgBytes,
+      };
     } else {
       this.logger.warn('Burst was not rendered');
     }

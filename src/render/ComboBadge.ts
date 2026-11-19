@@ -21,6 +21,8 @@ export interface BadgeOptions {
   readonly celebrate: boolean;
   readonly shake?: { readonly amplitude: number; readonly durationMs: number };
   readonly nonce: string;
+  /** false under reduced motion: no pop or shake (the drain bar stays, as it conveys information). */
+  readonly animate?: boolean;
 }
 
 export interface RenderedBadge {
@@ -55,9 +57,12 @@ export function renderComboBadge(o: BadgeOptions): RenderedBadge {
   const barWidth = pillWidth - padX;
   const drain = Math.max(0, Math.round(o.remainingMs));
 
-  const pop = o.celebrate
-    ? `<animateTransform attributeName="transform" type="scale" values="1.7;0.92;1.06;1" keyTimes="0;0.45;0.75;1" dur="420ms" fill="freeze"/>`
-    : `<animateTransform attributeName="transform" type="scale" values="1.22;1" dur="160ms" fill="freeze"/>`;
+  const animate = o.animate !== false;
+  const pop = !animate
+    ? ''
+    : o.celebrate
+      ? `<animateTransform attributeName="transform" type="scale" values="1.7;0.92;1.06;1" keyTimes="0;0.45;0.75;1" dur="420ms" fill="freeze"/>`
+      : `<animateTransform attributeName="transform" type="scale" values="1.22;1" dur="160ms" fill="freeze"/>`;
 
   const pill =
     `<rect x="0.5" y="${fmt(top + 0.5)}" width="${pillWidth - 1}" height="${pillHeight - 1}" rx="${fmt(pillHeight / 2)}" ` +
@@ -74,7 +79,7 @@ export function renderComboBadge(o: BadgeOptions): RenderedBadge {
 
   // Scale about the pill's bottom-left corner: translate → scale → translate back.
   const body =
-    `<g>${shakeAnimation(o.shake)}<g transform="translate(0 ${height})"><g>${pop}` +
+    `<g>${animate ? shakeAnimation(o.shake) : ''}<g transform="translate(0 ${height})"><g>${pop}` +
     `<g transform="translate(0 ${-height})">${pill}</g></g></g></g>`;
   return {
     svg: svgDocument(width, height, `<desc>${escapeXml(o.nonce)}</desc>${body}`),

@@ -85,6 +85,14 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
   await cdp.send('Page.enable');
   await cdp.send('Performance.enable');
   await sleep(1500);
+  // A spawned test window may not have OS focus; KeyBlaze pauses when unfocused, so pin it.
+  if (extraExtensions.length > 0) {
+    try {
+      await poc('keyblazeEnv', { id: 'your-publisher-id.keyblaze', override: { windowFocused: true } });
+    } catch {
+      /* KeyBlaze not loaded in this run */
+    }
+  }
   return {
     version,
     cdp,

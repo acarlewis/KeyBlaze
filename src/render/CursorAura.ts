@@ -34,6 +34,7 @@ export function renderAura(
   color: string,
   lineHeight: number,
   geometry: AuraGeometry,
+  animate = true,
 ): string {
   const c = escapeXml(color);
   const r = auraRadius(kind, lineHeight);
@@ -45,12 +46,18 @@ export function renderAura(
       `<defs><radialGradient id="a"><stop offset="0" stop-color="${c}" stop-opacity="0.85"/>` +
       `<stop offset="0.5" stop-color="${c}" stop-opacity="0.4"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs>` +
       `<circle cx="${fmt(cx)}" cy="${fmt(cy)}" r="${r}" fill="url(#a)">` +
-      `<animate attributeName="opacity" values="0.7;1;0.7" dur="1600ms" repeatCount="indefinite"/></circle>`;
+      (animate
+        ? `<animate attributeName="opacity" values="0.7;1;0.7" dur="1600ms" repeatCount="indefinite"/>`
+        : '') +
+      `</circle>`;
   } else {
     body =
       `<circle cx="${fmt(cx)}" cy="${fmt(cy)}" r="${fmt(r * 0.8)}" fill="none" stroke="${c}" stroke-width="2.2">` +
-      `<animate attributeName="r" values="${fmt(r * 0.7)};${fmt(r)};${fmt(r * 0.7)}" dur="1400ms" repeatCount="indefinite"/>` +
-      `<animate attributeName="stroke-opacity" values="1;0.45;1" dur="1400ms" repeatCount="indefinite"/></circle>`;
+      (animate
+        ? `<animate attributeName="r" values="${fmt(r * 0.7)};${fmt(r)};${fmt(r * 0.7)}" dur="1400ms" repeatCount="indefinite"/>` +
+          `<animate attributeName="stroke-opacity" values="1;0.45;1" dur="1400ms" repeatCount="indefinite"/>`
+        : '') +
+      `</circle>`;
   }
   return svgDocument(geometry.width, geometry.height, body);
 }

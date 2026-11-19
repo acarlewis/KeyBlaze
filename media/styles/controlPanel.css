@@ -466,3 +466,8 @@ button.add {
     transition: none !important;
   }
 }
+
+/* The hidden attribute must win over display rules such as .row { display: flex }. */
+[hidden] {
+  display: none !important;
+}

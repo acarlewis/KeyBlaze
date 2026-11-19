@@ -13,6 +13,7 @@ import type { Logger } from '../utils/logger';
 import { safely } from '../utils/logger';
 import { DecorationSlotPool } from './DecorationRenderer';
 import { caretContext, editorFontMetrics } from './EditorMetrics';
+import type { EnvironmentService } from './EnvironmentService';
 import type { InlayHintTracker } from './InlayHintTracker';
 import type { SettingsService } from './SettingsService';
 import type { TypingDetector } from './TypingDetector';
@@ -20,7 +21,8 @@ import type { TypingDetector } from './TypingDetector';
 const MAX_CURSORS = 8;
 /** Selection changes this soon after an edit are caused by typing, not by navigation. */
 const EDIT_SUPPRESS_MS = 120;
-const AURA_THROTTLE_MS = 50;
+/** Aura moves at most 10×/s: each move with a new column margin adds a CSS rule. */
+const AURA_THROTTLE_MS = 100;
 
 /** A single fading dot left behind where the caret was (trail effect). */
 const TrailDot: Effect = {
@@ -67,8 +69,20 @@ export class CursorEffects implements vscode.Disposable {
     private readonly detector: TypingDetector,
     private readonly inlayHints: InlayHintTracker | undefined,
     logger: Logger,
+    private readonly env?: EnvironmentService,
   ) {
     this.pool = new DecorationSlotPool(6, logger);
+    if (env) {
+      this.disposables.push(
+        env.onDidChange(() => {
+          this.auraUris.clear(); // animated vs static images
+          this.clearAura();
+          this.pool.clearAll();
+          const editor = vscode.window.activeTextEditor;
+          if (editor) this.scheduleAura(editor);
+        }),
+      );
+    }
     this.disposables.push(
       vscode.workspace.onDidChangeTextDocument((e) =>
         this.lastEditAt.set(e.document.uri.toString(), Date.now()),
@@ -114,6 +128,7 @@ export class CursorEffects implements vscode.Disposable {
     const s = this.settings.get();
     return (
       s.enabled &&
+      (this.env?.policy.active ?? true) &&
       s['cursor.effect'] !== 'none' &&
       editor === vscode.window.activeTextEditor &&
       this.detector.isDocumentEligible(editor.document)
@@ -130,7 +145,8 @@ export class CursorEffects implements vscode.Disposable {
       this.scheduleAura(editor);
       return;
     }
-    // sparks / trail: navigation only.
+    // sparks / trail: navigation only, and not under reduced motion.
+    if (this.env?.policy.reducedMotion) return;
     const editedAt = this.lastEditAt.get(editor.document.uri.toString()) ?? 0;
     if (Date.now() - editedAt < EDIT_SUPPRESS_MS) return;
     if (e.kind === undefined) return;
@@ -233,10 +249,11 @@ export class CursorEffects implements vscode.Disposable {
     lineHeight: number,
     layout: { width: number; height: number; originY: number },
   ): vscode.Uri {
-    const key = `${kind}|${color}|${lineHeight}|${layout.width}|${layout.height}|${layout.originY}`;
+    const animate = !(this.env?.policy.reducedMotion ?? false);
+    const key = `${kind}|${color}|${lineHeight}|${layout.width}|${layout.height}|${layout.originY}|${animate}`;
     let uri = this.auraUris.get(key);
     if (!uri) {
-      uri = vscode.Uri.parse(svgToDataUri(renderAura(kind, color, lineHeight, layout)));
+      uri = vscode.Uri.parse(svgToDataUri(renderAura(kind, color, lineHeight, layout, animate)));
       this.auraUris.set(key, uri);
     }
     return uri;
