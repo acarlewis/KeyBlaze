@@ -3,9 +3,19 @@
 // Usage: npm run build && npm run compile-tests && node test/visual/verify-placement.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, RESULTS, key, launch, measure, poc, screenshot, sleep } from '../../spike/lib.mjs';
+import {
+  ROOT,
+  RESULTS,
+  key,
+  launch,
+  measure,
+  poc,
+  screenshot,
+  sleep,
+  EXTENSION_ID,
+} from '../../spike/lib.mjs';
 
-const ID = 'your-publisher-id.keyblaze';
+const ID = EXTENSION_ID;
 const results = { cases: [], gallery: [] };
 const lines = [];
 for (let i = 0; i < 60; i++) lines.push(`export const value${i} = compute(${i}); // line ${i + 1}`);

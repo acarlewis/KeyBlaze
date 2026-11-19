@@ -3,9 +3,18 @@
 // Usage: npm run build && node test/visual/verify-sound.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, RESULTS, key, launch, poc, screenshot, sleep } from '../../spike/lib.mjs';
+import {
+  ROOT,
+  RESULTS,
+  key,
+  launch,
+  poc,
+  screenshot,
+  sleep,
+  EXTENSION_ID,
+} from '../../spike/lib.mjs';
 
-const ID = 'your-publisher-id.keyblaze';
+const ID = EXTENSION_ID;
 const out = { checks: [] };
 const check = (name, ok, detail = {}) => {
   out.checks.push({ name, ok: !!ok, detail });

@@ -12,9 +12,10 @@ import {
   poc,
   screenshot,
   sleep,
+  EXTENSION_ID,
 } from '../../spike/lib.mjs';
 
-const ID = 'your-publisher-id.keyblaze';
+const ID = EXTENSION_ID;
 const out = { checks: [] };
 const lines = Array.from(
   { length: 60 },

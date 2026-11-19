@@ -4,8 +4,16 @@
   "description": "Make Every Keystroke Count. Particle bursts, fire, lightning, fireworks, combos and cursor effects as you type, built on supported VS Code APIs.",
   "version": "0.1.0",
   "preview": true,
-  "publisher": "your-publisher-id",
+  "publisher": "CLdForge",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acarlewis/KeyBlaze.git"
+  },
+  "bugs": {
+    "url": "https://github.com/acarlewis/KeyBlaze/issues"
+  },
+  "homepage": "https://github.com/acarlewis/KeyBlaze#readme",
   "icon": "media/icons/icon.png",
   "galleryBanner": {
     "color": "#1c1d20",
@@ -483,7 +491,7 @@
     "test:unit": "npm run compile-tests && mocha --ui tdd \"out/test/unit/**/*.test.js\"",
     "test:integration": "npm run build && npm run compile-tests && vscode-test --label stable",
     "test": "npm run test:unit && npm run test:integration",
-    "package": "vsce package --allow-missing-repository --no-rewrite-relative-links",
+    "package": "vsce package",
     "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs && node test/visual/verify-combo.mjs && node test/visual/verify-panel.mjs && node test/visual/verify-sound.mjs",
     "test:performance": "npm run build && node test/visual/verify-performance.mjs",
     "test:coverage": "npm run compile-tests && c8 --include \"out/src/**\" --exclude \"out/src/webview/**\" --reporter=text-summary --reporter=text mocha --ui tdd \"out/test/unit/**/*.test.js\"",

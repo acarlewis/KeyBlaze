@@ -69,9 +69,15 @@ These are things automation can't judge, or that need hardware or environments n
 ## Compatibility statement
 
 - **Tested:** VS Code **1.90.0** (the minimum declared in `engines`) and **1.147.0**, on **Windows 11 x64**.
-- **Not yet tested:** macOS, Linux, remote and Codespaces environments, VS Code Insiders, and VSCodium.
-  The CI workflow (`.github/workflows/ci.yml`) is ready to run the unit and integration suites on Windows,
-  macOS and Linux against both versions, but it hasn't been executed yet because the project has no remote.
+- **Linux (static checks):** `npm run check`, unit tests, coverage, the production build and packaging
+  also pass on Linux (Ubuntu under WSL 2, case-sensitive file system, Node 22). Linux **integration**
+  tests haven't run locally, because the machine lacks VS Code's GUI libraries.
+- **CI:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs the checks and unit tests on
+  Windows, macOS and Linux, the integration suites on all three against VS Code stable and 1.90.0, and
+  the packaging guard. It runs on pushes to `main` and on pull requests. macOS and Linux count as
+  supported only once those jobs pass.
+- **Not yet tested:** macOS, Linux integration, remote and Codespaces environments, VS Code Insiders
+  and VSCodium.
 - **Not supported:** VS Code for the Web (vscode.dev). The extension has no `browser` entry point.
 - **Version-specific fix found by testing:** VS Code 1.90 doesn't re-evaluate `config.*` view
   `when` clauses at runtime. The Sound view therefore uses an extension-managed context key

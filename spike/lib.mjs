@@ -9,6 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(here, '..');
+/** The extension ID (`publisher.name`), always taken from package.json so scripts never drift from it. */
+export const EXTENSION_ID = (() => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  return `${pkg.publisher}.${pkg.name}`;
+})();
 export const RESULTS = path.join(here, 'results');
 const CODE = path.join(ROOT, '.vscode-test', `vscode-win32-x64-archive-${process.env.KEYBLAZE_VSCODE_VERSION ?? '1.147.0'}`, 'Code.exe');
 const CDP_PORT = 9444;
@@ -88,7 +93,7 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
   // A spawned test window may not have OS focus; KeyBlaze pauses when unfocused, so pin it.
   if (extraExtensions.length > 0 || keepInstalledExtensions) {
     try {
-      await poc('keyblazeEnv', { id: 'your-publisher-id.keyblaze', override: { windowFocused: true } });
+      await poc('keyblazeEnv', { id: EXTENSION_ID, override: { windowFocused: true } });
     } catch {
       /* KeyBlaze not loaded in this run */
     }
