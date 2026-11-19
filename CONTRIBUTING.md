@@ -1,3 +1,10 @@
+<p align="left">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="media/logo/Light_Background_application.png">
+    <img src="media/logo/Full_Logo.png" alt="KeyBlaze" width="240">
+  </picture>
+</p>
+
 # Contributing to KeyBlaze
 
 Thanks for helping. This guide covers the layout, the workflow, the tests and how to package a release.
@@ -65,6 +72,22 @@ See [docs/TESTING.md](docs/TESTING.md) for what each suite covers and the manual
 2. `npm run check` and `npm run test:integration` must pass. For rendering changes, also run
    `npm run test:visual`.
 3. Describe user-visible changes in `CHANGELOG.md` under an "Unreleased" heading.
+
+## Brand assets
+
+The official logo files live in `media/logo/` and are kept exactly as generated. Don't edit them; derive
+production copies instead.
+
+| File                                          | Use                                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `media/logo/Application_Icon.png`             | Source of the extension icon                                                                            |
+| `media/icons/icon.png`                        | Marketplace / extension icon: 256×256, transparent rounded corners, derived from `Application_Icon.png` |
+| `media/logo/Full_Logo.png`                    | Full logo for dark backgrounds (README, docs, Control Panel About on dark themes)                       |
+| `media/logo/Light_Background_application.png` | Full logo for light backgrounds (GitHub light mode, Control Panel About on light themes)                |
+| `media/logo/Monochrome_version.png`           | Single-colour variant; not used (the source has stray lines along its top edge)                         |
+| `docs/images/brand/social-preview.png`        | GitHub social preview (1280×640). Upload it under _Settings → General → Social preview_                 |
+
+Always write the product name as **KeyBlaze**.
 
 ## Packaging and publishing
 

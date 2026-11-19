@@ -8,7 +8,7 @@
   "license": "MIT",
   "icon": "media/icons/icon.png",
   "galleryBanner": {
-    "color": "#16151c",
+    "color": "#1c1d20",
     "theme": "dark"
   },
   "engines": {

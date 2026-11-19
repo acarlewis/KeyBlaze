@@ -1,3 +1,10 @@
+<p align="left">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="../media/logo/Light_Background_application.png">
+    <img src="../media/logo/Full_Logo.png" alt="KeyBlaze" width="240">
+  </picture>
+</p>
+
 # KeyBlaze rendering spike: results
 
 **Date:** 2026-11-19 · **VS Code:** 1.147.0 (Electron/Chromium), Windows 11, 144 Hz display, 1400×900 viewport at DPR 1

@@ -621,6 +621,11 @@ function renderDashboard(): HTMLElement {
   return wrap;
 }
 
+/** Brand asset URIs provided by the host (see ControlPanelProvider.html). */
+function brandAsset(name: 'icon' | 'logoDark' | 'logoLight'): string {
+  return document.getElementById('app')?.dataset[name] ?? '';
+}
+
 function renderAbout(): HTMLElement {
   const version = el('span');
   const vscodeVersion = el('span');
@@ -641,7 +646,14 @@ function renderAbout(): HTMLElement {
     el(
       'section',
       { class: 'card about' },
-      el('h2', {}, 'KeyBlaze'),
+      // Full logo: the dark-background artwork on dark/high-contrast themes, the light one on light themes.
+      el(
+        'div',
+        { class: 'about-logo' },
+        el('img', { class: 'logo-dark', src: brandAsset('logoDark'), alt: 'KeyBlaze' }),
+        el('img', { class: 'logo-light', src: brandAsset('logoLight'), alt: 'KeyBlaze' }),
+      ),
+      el('h2', { class: 'visually-hidden' }, 'KeyBlaze'),
       el('p', { class: 'tagline' }, 'Make Every Keystroke Count.'),
       el(
         'dl',
@@ -764,6 +776,13 @@ function render(): void {
     el(
       'header',
       { class: 'top' },
+      el('img', {
+        class: 'brand-mark',
+        src: brandAsset('icon'),
+        alt: '',
+        width: '32',
+        height: '32',
+      }),
       el('h1', {}, 'KeyBlaze'),
       el('span', { class: 'muted' }, 'Make Every Keystroke Count.'),
     ),

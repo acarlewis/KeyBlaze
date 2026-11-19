@@ -9,4 +9,8 @@
 !dist/extension.js
 !dist/webview/controlPanel.js
 !dist/webview/sound.js
-!media/**
+!media/icons/**
+!media/styles/**
+# Brand logos shown in the Control Panel's About tab (dark and light theme variants).
+!media/logo/Full_Logo.png
+!media/logo/Light_Background_application.png

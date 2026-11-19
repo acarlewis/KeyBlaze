@@ -471,3 +471,42 @@ button.add {
 [hidden] {
   display: none !important;
 }
+
+/* Brand assets */
+.brand-mark {
+  align-self: center;
+  border-radius: 7px;
+}
+
+.top {
+  align-items: center;
+}
+
+.about-logo img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: var(--kb-radius);
+  margin-bottom: 10px;
+}
+
+.about-logo .logo-light,
+body.vscode-light .about-logo .logo-dark,
+body.vscode-high-contrast-light .about-logo .logo-dark {
+  display: none;
+}
+
+body.vscode-light .about-logo .logo-light,
+body.vscode-high-contrast-light .about-logo .logo-light {
+  display: block;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,6 +1,11 @@
-# KeyBlaze
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="media/logo/Light_Background_application.png">
+    <img src="media/logo/Full_Logo.png" alt="KeyBlaze" width="520">
+  </picture>
+</h1>
 
-**Make Every Keystroke Count.**
+<p align="center"><strong>Make Every Keystroke Count.</strong></p>
 
 KeyBlaze brings your editor to life with particle bursts, fire, lightning, energy rings, fireworks
 and stars that erupt from your cursor as you type. It adds combo streaks, milestone celebrations,

@@ -337,6 +337,9 @@ async function handle(op, p) {
       api.setEnvironmentOverride(p.override ?? {});
       return { ok: true };
     }
+    case 'markdownPreview':
+      await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(p.path));
+      return { ok: true };
     case 'burstStats':
       return { burstGenMs: burstGenMs.splice(0) };
     default:
