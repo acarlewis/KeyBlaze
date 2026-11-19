@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { registerCommands } from './commands/registerCommands';
 import type { KeyBlazeSettings } from './config/schema';
+import { ComboIndicator } from './services/ComboIndicator';
+import { ComboService } from './services/ComboService';
+import { CursorEffects } from './services/CursorEffects';
 import { DecorationSlotPool } from './services/DecorationRenderer';
 import type { LastBurstInfo } from './services/EffectsController';
 import { EffectsController } from './services/EffectsController';
+import { ImpactPulse } from './services/ImpactPulse';
 import { InlayHintTracker } from './services/InlayHintTracker';
 import { SettingsService } from './services/SettingsService';
 import { StatusBarService } from './services/StatusBarService';
@@ -24,6 +28,11 @@ export interface KeyBlazeApi {
     poolSize: number;
     statusText: string;
     lastBurst: LastBurstInfo | undefined;
+    combo: { count: number; best: number; remainingMs: number };
+    comboBadgeVisible: boolean;
+    comboBadgeRenders: number;
+    celebrations: number;
+    cursorEffects: { auraVisible: boolean; oneShots: number };
   };
 }
 
@@ -34,7 +43,11 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
   const detector = new TypingDetector(settings);
   const inlayHints = new InlayHintTracker();
   const effects = new EffectsController(settings, detector, pool, logger, inlayHints);
-  const statusBar = new StatusBarService(settings);
+  const combo = new ComboService(settings, detector, context.globalState);
+  const comboIndicator = new ComboIndicator(settings, combo, logger);
+  const impact = new ImpactPulse(settings, combo, effects, logger);
+  const cursorEffects = new CursorEffects(settings, detector, inlayHints, logger);
+  const statusBar = new StatusBarService(settings, combo);
 
   context.subscriptions.push(
     logger,
@@ -43,6 +56,10 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
     detector,
     inlayHints,
     effects,
+    combo,
+    comboIndicator,
+    impact,
+    cursorEffects,
     statusBar,
     ...registerCommands({ context, settings, effects, pool, logger }),
   );
@@ -58,6 +75,11 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
       poolSize: pool.size,
       statusText: statusBar.text,
       lastBurst: effects.lastBurst,
+      combo: combo.snapshot(),
+      comboBadgeVisible: comboIndicator.visible,
+      comboBadgeRenders: comboIndicator.renderCount,
+      celebrations: impact.celebrationCount,
+      cursorEffects: cursorEffects.stats,
     }),
   };
 }

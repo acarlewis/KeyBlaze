@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
+import type { EngineSettings } from '../core/AnimationEngine';
 import { AnimationEngine } from '../core/AnimationEngine';
+import type { Milestone } from '../core/ComboManager';
 import type { BurstTrack } from '../core/BurstTrack';
 import type { AnchorDecision, EffectVariant, Layout } from '../core/placement';
 import { decideAnchor, layoutBurst } from '../core/placement';
@@ -82,6 +84,32 @@ export class EffectsController implements vscode.Disposable {
     }
   }
 
+  /**
+   * Milestone celebration: a bigger, longer burst of the current effect at the carets, never
+   * rate-limited, optionally with the Impact Pulse jitter.
+   */
+  celebrate(
+    editor: vscode.TextEditor,
+    positions: readonly vscode.Position[],
+    milestone: Milestone,
+    shake?: { amplitude: number; durationMs: number },
+  ): void {
+    const s = this.settings.get();
+    if (!s.enabled) return;
+    this.engine.admit(s, true);
+    const boost = 1 + 0.25 * (milestone.tier + 1);
+    this.burst(
+      editor,
+      positions,
+      {
+        particleCount: Math.min(40, Math.round(s.particleCount * boost * 1.4)),
+        intensity: Math.min(10, s.intensity + 1 + milestone.tier),
+        particleLifetime: Math.min(2000, Math.round(s.particleLifetime * 1.25)),
+      },
+      shake,
+    );
+  }
+
   dispose(): void {
     for (const d of this.disposables) d.dispose();
   }
@@ -93,8 +121,13 @@ export class EffectsController implements vscode.Disposable {
     this.burst(e.editor, e.positions);
   }
 
-  private burst(editor: vscode.TextEditor, positions: readonly vscode.Position[]): void {
-    const s = this.settings.get();
+  private burst(
+    editor: vscode.TextEditor,
+    positions: readonly vscode.Position[],
+    overrides: Partial<EngineSettings> = {},
+    shake?: { amplitude: number; durationMs: number },
+  ): void {
+    const s = { ...this.settings.get(), ...overrides };
     const profile = qualityProfile(s['performance.quality'], s.performanceMode);
     const cursors = positions.slice(0, MAX_BURST_CURSORS).map((position) => {
       const ctx = caretContext(editor, position, s.placement, this.inlayHints);
@@ -129,6 +162,7 @@ export class EffectsController implements vscode.Disposable {
           height: layout.height,
           originY: layout.originY,
           nonce: `${Date.now().toString(36)}.${(++this.nonce).toString(36)}`,
+          ...(shake ? { shake } : {}),
         });
         svgBytes += rendered.svg.length;
         uri = vscode.Uri.parse(svgToDataUri(rendered.svg));

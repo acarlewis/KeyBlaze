@@ -14,7 +14,7 @@ import type {
   RingElement,
   ShapeKind,
 } from '../core/BurstTrack';
-import { escapeXml, fmt, svgDocument } from './svg';
+import { escapeXml, fmt, shakeAnimation, svgDocument } from './svg';
 
 export interface RenderedSvg {
   readonly svg: string;
@@ -36,6 +36,8 @@ export interface SvgRenderOptions {
    * byte-identical SVGs would show the same animation frame (spike report §Q5).
    */
   readonly nonce?: string;
+  /** Impact Pulse: jitter the whole burst at the start (milestone celebrations). */
+  readonly shake?: { readonly amplitude: number; readonly durationMs: number };
 }
 
 /** Unit shapes (radius 1) centred on the origin. */
@@ -56,7 +58,8 @@ export function renderBurstSvg(track: BurstTrack, options: SvgRenderOptions): Re
   for (const el of track.elements) body += renderElement(el, dur, options, defs);
   const defsXml = defs.size > 0 ? `<defs>${[...defs.values()].join('')}</defs>` : '';
   const nonce = options.nonce ? `<desc>${escapeXml(options.nonce)}</desc>` : '';
-  const content = `${nonce}${defsXml}<g transform="translate(${track.halfWidth} ${fmt(originY)})">${body}</g>`;
+  const shaken = options.shake ? `<g>${shakeAnimation(options.shake)}${body}</g>` : body;
+  const content = `${nonce}${defsXml}<g transform="translate(${track.halfWidth} ${fmt(originY)})">${shaken}</g>`;
   return { svg: svgDocument(width, height, content), width, height };
 }
 

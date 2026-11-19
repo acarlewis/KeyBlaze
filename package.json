@@ -452,7 +452,7 @@
     "test:integration": "npm run build && npm run compile-tests && vscode-test",
     "test": "npm run test:unit && npm run test:integration",
     "package": "vsce package",
-    "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs"
+    "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs && node test/visual/verify-combo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

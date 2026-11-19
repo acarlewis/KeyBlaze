@@ -324,3 +324,152 @@ suite('Placement in a real editor', () => {
     assert.ok(!sizes.has(-1));
   });
 });
+
+suite('Combo system', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  async function comboEditor() {
+    await config().update('combo.milestones', [3, 6], vscode.ConfigurationTarget.Global);
+    await config().update('combo.resetTime', 600, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await wait(700); // any earlier combo expires
+    return editor;
+  }
+
+  test('every keystroke counts, including rate-limited ones', async () => {
+    const api = await getApi();
+    await config().update('performance.maxBurstsPerSecond', 1, vscode.ConfigurationTarget.Global);
+    await comboEditor();
+    const bursts = api.getStats().totalBursts;
+    const celebrations = api.getStats().celebrations;
+    await typeText('abcde');
+    assert.strictEqual(api.getStats().combo.count, 5);
+    // One paced keystroke burst, plus milestone celebrations (which are never rate-limited).
+    const celebrated = api.getStats().celebrations - celebrations;
+    assert.ok(api.getStats().totalBursts - bursts <= 1 + celebrated, 'bursts were rate-limited');
+  });
+
+  test('combo resets after the inactivity period', async () => {
+    const api = await getApi();
+    await comboEditor();
+    await typeText('ab');
+    assert.strictEqual(api.getStats().combo.count, 2);
+    await waitFor(() => api.getStats().combo.count === 0, 2000, 'reset');
+    await typeText('c');
+    assert.strictEqual(api.getStats().combo.count, 1);
+  });
+
+  test('milestones trigger celebrations; badge and status bar show the combo', async () => {
+    const api = await getApi();
+    await comboEditor();
+    const celebrations = api.getStats().celebrations;
+    await typeText('abc', 30);
+    await waitFor(() => api.getStats().celebrations === celebrations + 1, 2000, 'first milestone');
+    await waitFor(() => api.getStats().comboBadgeVisible, 2000, 'badge');
+    await waitFor(() => api.getStats().statusText.includes('3x combo'), 2000, 'status bar');
+    await typeText('def', 30);
+    await waitFor(() => api.getStats().celebrations === celebrations + 2, 2000, 'second milestone');
+    await waitFor(() => !api.getStats().comboBadgeVisible, 3000, 'badge cleared after reset');
+    await waitFor(() => !api.getStats().statusText.includes('combo'), 2000, 'status bar cleared');
+  });
+
+  test('Impact Pulse (shake + line flash) runs without errors', async () => {
+    const api = await getApi();
+    await config().update('screenShake.enabled', true, vscode.ConfigurationTarget.Global);
+    await comboEditor();
+    const celebrations = api.getStats().celebrations;
+    await typeText('abc', 30);
+    await waitFor(() => api.getStats().celebrations === celebrations + 1, 2000, 'milestone');
+    await wait(400); // flash steps complete
+  });
+
+  test('combo.enabled=false stops counting and hides the badge', async () => {
+    const api = await getApi();
+    await config().update('combo.enabled', false, vscode.ConfigurationTarget.Global);
+    await comboEditor();
+    await typeText('abcd');
+    assert.strictEqual(api.getStats().combo.count, 0);
+    assert.ok(!api.getStats().comboBadgeVisible);
+  });
+
+  test('showIndicator=false keeps counting but shows no badge', async () => {
+    const api = await getApi();
+    await config().update('combo.showIndicator', false, vscode.ConfigurationTarget.Global);
+    await comboEditor();
+    await typeText('abcd', 20);
+    assert.strictEqual(api.getStats().combo.count, 4);
+    await wait(200);
+    assert.ok(!api.getStats().comboBadgeVisible);
+  });
+
+  test('disabling KeyBlaze ends the combo', async () => {
+    const api = await getApi();
+    await comboEditor();
+    await typeText('ab');
+    await vscode.commands.executeCommand('keyblaze.disable');
+    assert.strictEqual(api.getStats().combo.count, 0);
+  });
+});
+
+suite('Cursor effects', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  test('glow follows the caret in the active editor and clears when turned off', async () => {
+    const api = await getApi();
+    await config().update('cursor.effect', 'glow', vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 5, 4);
+    await vscode.commands.executeCommand('cursorRight');
+    await waitFor(() => api.getStats().cursorEffects.auraVisible, 2000, 'aura');
+    await config().update('cursor.effect', 'none', vscode.ConfigurationTarget.Global);
+    await waitFor(() => !api.getStats().cursorEffects.auraVisible, 2000, 'aura cleared');
+  });
+
+  test('ring aura renders too', async () => {
+    const api = await getApi();
+    await config().update('cursor.effect', 'ring', vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 5, 4);
+    await vscode.commands.executeCommand('cursorDown');
+    await waitFor(() => api.getStats().cursorEffects.auraVisible, 2000, 'aura');
+  });
+
+  for (const effect of ['sparks', 'trail'] as const) {
+    test(`${effect}: navigation produces one-shot effects, typing does not`, async () => {
+      const api = await getApi();
+      await config().update('cursor.effect', effect, vscode.ConfigurationTarget.Global);
+      const editor = await openFixture('long.ts');
+      await placeCaret(editor, 5, 4);
+      await wait(200);
+      const before = api.getStats().cursorEffects.oneShots;
+      await vscode.commands.executeCommand('cursorRight');
+      await wait(100);
+      await vscode.commands.executeCommand('cursorDown');
+      await waitFor(() => api.getStats().cursorEffects.oneShots > before, 2000, 'one-shot');
+      const afterNav = api.getStats().cursorEffects.oneShots;
+      await typeText('xy', 50);
+      await wait(150);
+      assert.strictEqual(
+        api.getStats().cursorEffects.oneShots,
+        afterNav,
+        'typing must not trigger cursor one-shots',
+      );
+    });
+  }
+
+  test('cursor effects are off in excluded languages', async () => {
+    const api = await getApi();
+    await config().update('cursor.effect', 'glow', vscode.ConfigurationTarget.Global);
+    await config().update('excludeLanguages', ['typescript'], vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 5, 4);
+    await vscode.commands.executeCommand('cursorRight');
+    await wait(300);
+    assert.ok(!api.getStats().cursorEffects.auraVisible);
+  });
+});
