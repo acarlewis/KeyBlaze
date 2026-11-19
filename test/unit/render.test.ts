@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import { anchorRange, attachmentMargin, computeLineHeight } from '../../src/render/geometry';
-import { interimBurstSvg } from '../../src/render/interimBurst';
 import { escapeXml, svgToDataUri } from '../../src/render/svg';
 import { cycle } from '../../src/utils/cycle';
 
@@ -49,19 +48,6 @@ suite('SVG helpers', () => {
       escapeXml(`<a href="x">'&'</a>`),
       '&lt;a href=&quot;x&quot;&gt;&apos;&amp;&apos;&lt;/a&gt;',
     );
-  });
-
-  test('interim burst renders the requested particle count', () => {
-    const svg = interimBurstSvg({
-      colors: ['#fff'],
-      count: 7,
-      size: 3,
-      speed: 1,
-      lifetimeMs: 500,
-      canvas: 96,
-    });
-    assert.strictEqual(svg.match(/<circle /g)?.length, 7);
-    assert.ok(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"'));
   });
 });
 

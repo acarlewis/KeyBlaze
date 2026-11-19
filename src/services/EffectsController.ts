@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
-import { interimBurstSvg } from '../render/interimBurst';
+import type { BurstRequestOptions } from '../core/AnimationEngine';
+import { AnimationEngine } from '../core/AnimationEngine';
+import { qualityProfile } from '../core/quality';
+import { renderBurstSvg } from '../render/SvgRenderer';
 import { svgToDataUri } from '../render/svg';
 import type { Logger } from '../utils/logger';
 import { safely } from '../utils/logger';
@@ -8,13 +11,12 @@ import { editorLineHeight } from './EditorMetrics';
 import type { SettingsService } from './SettingsService';
 import type { KeystrokeEvent, TypingDetector } from './TypingDetector';
 
-/**
- * Wires keystrokes to rendered bursts.
- * Phase 2: uses the interim burst SVG. Phase 3 puts the AnimationEngine/ParticleEngine behind this.
- */
+/** Maximum cursors that get their own burst for one keystroke (multi-cursor). */
+const MAX_BURST_CURSORS = 8;
+
+/** Connects keystrokes → AnimationEngine → SvgRenderer → decoration slot pool. */
 export class EffectsController implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
-  private readonly recentBursts: number[] = [];
   private burstCount = 0;
 
   constructor(
@@ -22,6 +24,7 @@ export class EffectsController implements vscode.Disposable {
     detector: TypingDetector,
     private readonly pool: DecorationSlotPool,
     private readonly logger: Logger,
+    private readonly engine = new AnimationEngine(),
   ) {
     this.disposables.push(
       detector.onKeystroke((e) =>
@@ -29,8 +32,9 @@ export class EffectsController implements vscode.Disposable {
       ),
       settings.onDidChange(({ settings: s, changed }) => {
         if (changed.has('enabled') && !s.enabled) this.pool.clearAll();
-        if (changed.has('performance.maxConcurrentBursts'))
+        if (changed.has('performance.maxConcurrentBursts')) {
           this.pool.resize(s['performance.maxConcurrentBursts']);
+        }
       }),
     );
   }
@@ -40,12 +44,17 @@ export class EffectsController implements vscode.Disposable {
     return this.burstCount;
   }
 
+  get engineStats(): ReturnType<AnimationEngine['getStats']> {
+    return this.engine.getStats();
+  }
+
   /** Fires a short demonstration sequence at the cursors of `editor`, ignoring the rate limit. */
   async preview(editor: vscode.TextEditor, bursts = 5, intervalMs = 160): Promise<void> {
     for (let i = 0; i < bursts; i++) {
-      this.render(
+      this.burst(
         editor,
         editor.selections.map((s) => s.active),
+        { bypassRateLimit: true },
       );
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
@@ -57,44 +66,30 @@ export class EffectsController implements vscode.Disposable {
 
   private onKeystroke(e: KeystrokeEvent): void {
     if (!this.settings.get().enabled) return;
-    if (!this.allowBurst()) return;
-    this.render(e.editor, e.positions);
+    this.burst(e.editor, e.positions, {});
   }
 
-  private allowBurst(): boolean {
-    const now = Date.now();
-    while (this.recentBursts.length > 0 && now - (this.recentBursts[0] ?? 0) > 1000)
-      this.recentBursts.shift();
-    if (this.recentBursts.length >= this.settings.get()['performance.maxBurstsPerSecond'])
-      return false;
-    this.recentBursts.push(now);
-    return true;
-  }
-
-  private render(editor: vscode.TextEditor, positions: readonly vscode.Position[]): void {
+  private burst(
+    editor: vscode.TextEditor,
+    positions: readonly vscode.Position[],
+    options: BurstRequestOptions,
+  ): void {
     const s = this.settings.get();
-    const canvas = 96;
-    const count = s.performanceMode ? Math.max(1, Math.ceil(s.particleCount / 2)) : s.particleCount;
-    const placements = positions.slice(0, 8).map((position) => ({
-      position,
-      image: {
-        uri: vscode.Uri.parse(
-          svgToDataUri(
-            interimBurstSvg({
-              colors: s.colors,
-              count,
-              size: s.particleSize,
-              speed: s.particleSpeed,
-              lifetimeMs: s.particleLifetime,
-              canvas,
-            }),
-          ),
-        ),
-        width: canvas,
-        height: canvas,
-      },
-    }));
-    if (this.pool.show(editor, placements, s.particleLifetime, editorLineHeight(editor.document))) {
+    const track = this.engine.requestBurst(s, options);
+    if (!track) return; // rate-limited
+
+    const profile = qualityProfile(s['performance.quality'], s.performanceMode);
+    const rendered = renderBurstSvg(track, { glow: profile.glow });
+    // One image shared by every cursor of this keystroke: one encode, one CSS rule.
+    const image = {
+      uri: vscode.Uri.parse(svgToDataUri(rendered.svg)),
+      width: rendered.width,
+      height: rendered.height,
+    };
+    const placements = positions
+      .slice(0, MAX_BURST_CURSORS)
+      .map((position) => ({ position, image }));
+    if (this.pool.show(editor, placements, track.durationMs, editorLineHeight(editor.document))) {
       this.burstCount++;
     } else {
       this.logger.warn('Burst was not rendered');
