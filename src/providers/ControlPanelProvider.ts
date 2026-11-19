@@ -73,7 +73,7 @@ export class ControlPanelProvider implements vscode.Disposable {
         localResourceRoots: [mediaRoot, scriptRoot],
       },
     );
-    panel.iconPath = vscode.Uri.joinPath(mediaRoot, 'icons', 'panel-icon.svg');
+    panel.iconPath = vscode.Uri.joinPath(mediaRoot, 'icons', 'icon.png');
     panel.webview.html = this.html(panel.webview, mediaRoot, scriptRoot);
     this.panel = panel;
     this.panelDisposables = [
@@ -191,8 +191,22 @@ export class ControlPanelProvider implements vscode.Disposable {
         await vscode.commands.executeCommand('keyblaze.openSoundView');
         break;
       case 'openDocs': {
-        const readme = vscode.Uri.joinPath(this.context.extensionUri, 'README.md');
-        await vscode.commands.executeCommand('markdown.showPreview', readme);
+        // vsce packages the README as `readme.md`; the source tree has `README.md`. Case matters on Linux.
+        for (const name of ['readme.md', 'README.md']) {
+          const readme = vscode.Uri.joinPath(this.context.extensionUri, name);
+          try {
+            await vscode.workspace.fs.stat(readme);
+            await vscode.commands.executeCommand('markdown.showPreview', readme);
+            return true;
+          } catch {
+            // try the next name
+          }
+        }
+        this.post({
+          type: 'notice',
+          level: 'error',
+          text: 'README not found in the extension folder.',
+        });
         break;
       }
     }
@@ -243,6 +257,13 @@ export class ControlPanelProvider implements vscode.Disposable {
     const nonce = createNonce();
     const css = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'styles', 'controlPanel.css'));
     const js = webview.asWebviewUri(vscode.Uri.joinPath(scriptRoot, 'controlPanel.js'));
+    const asset = (...parts: string[]): string =>
+      webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, ...parts)).toString();
+    const brand = {
+      icon: asset('icons', 'icon.png'),
+      logoDark: asset('logo', 'Full_Logo.png'),
+      logoLight: asset('logo', 'Light_Background_application.png'),
+    };
     const csp = [
       "default-src 'none'",
       `img-src ${webview.cspSource} data:`,
@@ -260,7 +281,7 @@ export class ControlPanelProvider implements vscode.Disposable {
 <title>KeyBlaze</title>
 </head>
 <body>
-<div id="app" aria-live="polite"><p class="loading">Loading KeyBlaze…</p></div>
+<div id="app" aria-live="polite" data-icon="${brand.icon}" data-logo-dark="${brand.logoDark}" data-logo-light="${brand.logoLight}"><p class="loading">Loading KeyBlaze…</p></div>
 <script nonce="${nonce}" src="${js.toString()}"></script>
 </body>
 </html>`;

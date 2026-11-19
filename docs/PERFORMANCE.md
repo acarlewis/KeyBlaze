@@ -1,3 +1,10 @@
+<p align="left">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="../media/logo/Light_Background_application.png">
+    <img src="../media/logo/Full_Logo.png" alt="KeyBlaze" width="240">
+  </picture>
+</p>
+
 # KeyBlaze performance
 
 Measured with the real extension in VS Code 1.147.0 (Windows 11, 144 Hz display) using

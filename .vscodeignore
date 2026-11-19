@@ -1,0 +1,16 @@
+# Package only what the extension needs at runtime, plus the docs.
+# README images use relative links: they render on GitHub, and on the Marketplace once a `repository`
+# is configured (vsce then rewrites them to absolute URLs), so the image files aren't packaged.
+**
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE
+!dist/extension.js
+!dist/webview/controlPanel.js
+!dist/webview/sound.js
+!media/icons/**
+!media/styles/**
+# Brand logos shown in the Control Panel's About tab (dark and light theme variants).
+!media/logo/Full_Logo.png
+!media/logo/Light_Background_application.png
