@@ -1,6 +1,10 @@
 import type { QualityLevel } from '../config/schema';
 
-/** How much work a burst may cost. Phase 7's PerformanceManager scales this further. */
+/**
+ * How much renderer work a burst may cost. Budgets come from the rendering spike
+ * (docs/SPIKE_REPORT.md §Q6): glow only at high quality, bounded image size and element count.
+ * Phase 7's PerformanceManager scales this further.
+ */
 export interface QualityProfile {
   readonly keyframes: number;
   readonly substeps: number;
@@ -19,24 +23,24 @@ const PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = {
     substeps: 3,
     glow: false,
     particleScale: 0.6,
-    maxElements: 30,
-    maxHalfExtent: 90,
+    maxElements: 24,
+    maxHalfExtent: 80,
   },
   medium: {
     keyframes: 7,
     substeps: 4,
-    glow: true,
+    glow: false,
     particleScale: 0.85,
-    maxElements: 60,
-    maxHalfExtent: 120,
+    maxElements: 40,
+    maxHalfExtent: 100,
   },
   high: {
     keyframes: 10,
     substeps: 4,
     glow: true,
     particleScale: 1,
-    maxElements: 100,
-    maxHalfExtent: 150,
+    maxElements: 60,
+    maxHalfExtent: 120,
   },
 };
 
@@ -46,7 +50,7 @@ const PERFORMANCE_MODE: QualityProfile = {
   glow: false,
   particleScale: 0.5,
   maxElements: 16,
-  maxHalfExtent: 70,
+  maxHalfExtent: 60,
 };
 
 export function qualityProfile(level: QualityLevel, performanceMode: boolean): QualityProfile {

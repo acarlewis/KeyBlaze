@@ -122,3 +122,27 @@ fast, one dev dependency), ESLint 9 flat config + typescript-eslint, Prettier, M
 **Minimum VS Code version:** a target of `^1.90.0` is proposed. It will be verified in Phase 8 by
 running the integration suite against both 1.90.0 and current stable (1.147.0) via test-electron.
 Only versions that were actually tested will be claimed.
+
+---
+
+## Update after the rendering spike (Phase 4)
+
+The spike ([SPIKE_REPORT.md](SPIKE_REPORT.md)) changed §2 in two ways:
+
+- **Decoration images are baseline-pinned.** Their bottom edge sits on the anchor line's text baseline,
+  and margins can't move them vertically. A zero-height margin (`margin-top = -height`) is required,
+  otherwise the line's own text is pushed down.
+- **Placement is decided per keystroke** in `src/core/placement.ts` (pure, unit-tested):
+  - **below-anchored**: full-circle effects. The decoration sits at column 0 of a line N below the caret,
+    is shifted right by the caret's visual column in `ch`, and its SVG is padded so that the origin
+    lands on the caret line.
+  - **caret-anchored**: effects use their _upward_ variant. This is the fallback next to wide
+    characters, inlay hints (cached by `InlayHintTracker`), folds or the viewport edge (`visibleRanges`),
+    possible word wrap and the end of the document. It's also used for `keyblaze.placement:
+cursorLine`.
+- **Every burst SVG carries a nonce.** Chromium shares one SMIL timeline per image URL.
+- **Renderer budget:** ≤ 12 bursts/s, evenly paced (minimum gap 0.75 × 1000/limit), 8 concurrent,
+  ≤ 40 particles, glow only at high quality, half-extent ≤ 120 px.
+
+`test/visual/verify-placement.mjs` (`npm run test:visual`) measures the real extension in VS Code over
+CDP: the burst origin versus the caret, and the text shift.

@@ -44,6 +44,9 @@ export type SoundTheme = (typeof SOUND_THEMES)[number];
 export const SOUND_MODES = ['milestones', 'everyKeystroke'] as const;
 export type SoundMode = (typeof SOUND_MODES)[number];
 
+export const PLACEMENT_MODES = ['auto', 'cursorLine'] as const;
+export type PlacementMode = (typeof PLACEMENT_MODES)[number];
+
 export const QUALITY_LEVELS = ['low', 'medium', 'high'] as const;
 export type QualityLevel = (typeof QUALITY_LEVELS)[number];
 
@@ -60,6 +63,7 @@ export interface KeyBlazeSettings {
   particleShape: ParticleShape;
   colors: string[];
   triggerOnDelete: boolean;
+  placement: PlacementMode;
   'cursor.effect': CursorEffectId;
   'combo.enabled': boolean;
   'combo.resetTime': number;
@@ -201,13 +205,14 @@ export const SETTING_SPECS: SettingSpecs = {
   preset: oneOf(PRESET_IDS, 'classicBurst'),
   effect: oneOf(EFFECT_IDS, 'particles'),
   intensity: num(5, 1, 10, true),
-  particleCount: num(14, 1, 100, true),
+  particleCount: num(14, 1, 40, true),
   particleSize: num(3, 1, 12),
   particleSpeed: num(1, 0.25, 3),
-  particleLifetime: num(650, 150, 3000, true),
+  particleLifetime: num(650, 150, 2000, true),
   particleShape: oneOf(PARTICLE_SHAPES, 'auto'),
   colors: colorList(['#ff8a00', '#ffd23f', '#ff5e3a', '#fff3b0'], 12),
   triggerOnDelete: bool(true),
+  placement: oneOf(PLACEMENT_MODES, 'auto'),
   'cursor.effect': oneOf(CURSOR_EFFECT_IDS, 'none'),
   'combo.enabled': bool(true),
   'combo.resetTime': num(3000, 500, 60000, true),
@@ -223,8 +228,8 @@ export const SETTING_SPECS: SettingSpecs = {
   'sound.theme': oneOf(SOUND_THEMES, 'soft'),
   'sound.mode': oneOf(SOUND_MODES, 'milestones'),
   performanceMode: bool(false),
-  'performance.maxConcurrentBursts': num(16, 1, 48, true),
-  'performance.maxBurstsPerSecond': num(24, 1, 60, true),
+  'performance.maxConcurrentBursts': num(8, 1, 24, true),
+  'performance.maxBurstsPerSecond': num(12, 1, 30, true),
   'performance.frameRateLimit': num(60, 15, 144, true),
   'performance.quality': oneOf(QUALITY_LEVELS, 'high'),
   'accessibility.respectReducedMotion': bool(true),

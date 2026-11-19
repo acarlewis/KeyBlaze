@@ -54,6 +54,9 @@ export interface ParticleInit {
 export interface RingInit {
   x?: number;
   y?: number;
+  /** Centre velocity in px/s (rings can drift, e.g. rise). */
+  vx?: number;
+  vy?: number;
   radiusFrom: number;
   radiusTo: number;
   strokeWidth: number;
@@ -159,12 +162,12 @@ export class ParticleEngine {
 
     const elements: BurstElement[] = [
       ...this.simulateParticles(particles, keyframes, options),
-      ...rings.map((r) => ringTrack(r, keyframes)),
+      ...rings.map((r) => ringTrack(r, keyframes, options.durationMs / 1000)),
       ...bolts.map((b) => boltTrack(b, keyframes, options.rng)),
     ];
 
-    const { halfWidth, halfHeight } = measure(elements, options.maxHalfExtent);
-    return { durationMs: options.durationMs, keyframes, halfWidth, halfHeight, elements };
+    const { halfWidth, up, down } = measure(elements, options.maxHalfExtent);
+    return { durationMs: options.durationMs, keyframes, halfWidth, up, down, elements };
   }
 
   private acquire(init: ParticleInit): ParticleState {
@@ -274,15 +277,16 @@ function particleFrame(
   };
 }
 
-function ringTrack(init: RingInit, keyframes: number): RingElement {
+function ringTrack(init: RingInit, keyframes: number, seconds: number): RingElement {
   const frames: Frame[] = [];
   for (let k = 0; k < keyframes; k++) {
     const local = localLife(k / (keyframes - 1), init.delay, init.life);
     const c = Math.min(1, Math.max(0, local));
     const eased = 1 - (1 - c) ** 3; // ease-out cubic
+    const age = Math.max(0, k / (keyframes - 1) - (init.delay ?? 0)) * seconds;
     frames.push({
-      x: init.x ?? 0,
-      y: init.y ?? 0,
+      x: (init.x ?? 0) + (init.vx ?? 0) * age,
+      y: (init.y ?? 0) + (init.vy ?? 0) * age,
       s: init.radiusFrom + (init.radiusTo - init.radiusFrom) * eased,
       o: local >= 0 && local <= 1 ? (1 - c) ** 1.5 : 0,
       r: 0,
@@ -317,40 +321,37 @@ function boltTrack(init: BoltInit, keyframes: number, rng: Random): BoltElement 
   };
 }
 
-/** Bounding half-extents over all frames, clamped to `max`. Always at least 4px. */
+/**
+ * Extents over all visible frames, each clamped to `max` and at least 4px:
+ * `halfWidth` (symmetric horizontally, so the origin stays centred on the caret), `up` and `down`.
+ */
 export function measure(
   elements: readonly BurstElement[],
   max: number,
-): { halfWidth: number; halfHeight: number } {
+): { halfWidth: number; up: number; down: number } {
   let hw = 4;
-  let hh = 4;
+  let up = 4;
+  let down = 4;
+  const grow = (x: number, y: number, r: number): void => {
+    hw = Math.max(hw, Math.abs(x) + r);
+    up = Math.max(up, -y + r);
+    down = Math.max(down, y + r);
+  };
   for (const el of elements) {
     for (const f of el.frames) {
       if (f.o <= 0) continue;
-      let ex: number;
-      let ey: number;
       if (el.kind === 'particle') {
-        const r = el.size * f.s * (el.glow > 0 ? 2.5 : 1) + 1;
-        ex = Math.abs(f.x) + r;
-        ey = Math.abs(f.y) + r;
+        grow(f.x, f.y, el.size * f.s * (el.glow > 0 ? 2.5 : 1) + 1);
       } else if (el.kind === 'ring') {
-        const r = f.s + el.strokeWidth * (el.glow > 0 ? 3 : 1);
-        ex = Math.abs(f.x) + r;
-        ey = Math.abs(f.y) + r;
+        grow(f.x, f.y, f.s + el.strokeWidth * (el.glow > 0 ? 3 : 1));
       } else {
-        let px = 0;
-        let py = 0;
-        for (let i = 0; i + 1 < el.points.length; i += 2) {
-          px = Math.max(px, Math.abs((el.points[i] ?? 0) * f.s));
-          py = Math.max(py, Math.abs((el.points[i + 1] ?? 0) * f.s));
-        }
         const pad = el.width * (el.glow > 0 ? 3 : 1);
-        ex = Math.abs(f.x) + px + pad;
-        ey = Math.abs(f.y) + py + pad;
+        for (let i = 0; i + 1 < el.points.length; i += 2) {
+          grow(f.x + (el.points[i] ?? 0) * f.s, f.y + (el.points[i + 1] ?? 0) * f.s, pad);
+        }
       }
-      hw = Math.max(hw, ex);
-      hh = Math.max(hh, ey);
     }
   }
-  return { halfWidth: Math.ceil(Math.min(max, hw)), halfHeight: Math.ceil(Math.min(max, hh)) };
+  const c = (v: number): number => Math.ceil(Math.min(max, v));
+  return { halfWidth: c(hw), up: c(up), down: c(down) };
 }

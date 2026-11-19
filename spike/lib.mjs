@@ -16,7 +16,7 @@ const POC_PORT = 9555;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function launch({ settings = {}, width = 1400, height = 900 } = {}) {
+export async function launch({ settings = {}, width = 1400, height = 900, extraExtensions = [] } = {}) {
   const userData = path.join(RESULTS, 'user-data');
   fs.rmSync(userData, { recursive: true, force: true });
   fs.mkdirSync(path.join(userData, 'User'), { recursive: true });
@@ -50,6 +50,7 @@ export async function launch({ settings = {}, width = 1400, height = 900 } = {})
     CODE,
     [
       `--extensionDevelopmentPath=${path.join(here, 'poc')}`,
+      ...extraExtensions.map((p) => `--extensionDevelopmentPath=${p}`),
       `--user-data-dir=${userData}`,
       `--extensions-dir=${path.join(RESULTS, 'extensions')}`,
       '--disable-extensions',

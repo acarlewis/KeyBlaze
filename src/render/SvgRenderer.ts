@@ -25,6 +25,17 @@ export interface RenderedSvg {
 export interface SvgRenderOptions {
   /** Draw halos for elements with glow > 0. */
   readonly glow: boolean;
+  /**
+   * Image height and the origin's y within it (from the placement layout). Defaults to the burst's
+   * own extents (up + down, origin at `up`). Content outside the image is clipped.
+   */
+  readonly height?: number;
+  readonly originY?: number;
+  /**
+   * Makes the document unique. Chromium shares one SMIL timeline per image URL, so two bursts with
+   * byte-identical SVGs would show the same animation frame (spike report §Q5).
+   */
+  readonly nonce?: string;
 }
 
 /** Unit shapes (radius 1) centred on the origin. */
@@ -37,13 +48,15 @@ const SHAPE_PATHS: Readonly<Record<Exclude<ShapeKind, 'circle'>, string>> = {
 
 export function renderBurstSvg(track: BurstTrack, options: SvgRenderOptions): RenderedSvg {
   const width = track.halfWidth * 2;
-  const height = track.halfHeight * 2;
+  const height = Math.max(1, Math.round(options.height ?? track.up + track.down));
+  const originY = options.originY ?? track.up;
   const dur = `${Math.round(track.durationMs)}ms`;
   const defs = new Map<string, string>();
   let body = '';
   for (const el of track.elements) body += renderElement(el, dur, options, defs);
   const defsXml = defs.size > 0 ? `<defs>${[...defs.values()].join('')}</defs>` : '';
-  const content = `${defsXml}<g transform="translate(${track.halfWidth} ${track.halfHeight})">${body}</g>`;
+  const nonce = options.nonce ? `<desc>${escapeXml(options.nonce)}</desc>` : '';
+  const content = `${nonce}${defsXml}<g transform="translate(${track.halfWidth} ${fmt(originY)})">${body}</g>`;
   return { svg: svgDocument(width, height, content), width, height };
 }
 
@@ -139,9 +152,15 @@ function renderBolt(el: BoltElement, dur: string, options: SvgRenderOptions): st
   const line = (width: number, alpha: number): string =>
     `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="${fmt(width)}" ` +
     `stroke-opacity="${fmt(alpha)}" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const halo = options.glow && el.glow > 0 ? line(el.width * 3, 0.3 * el.glow) : '';
+  const glowing = options.glow && el.glow > 0;
+  const halo = glowing ? line(el.width * 3, 0.3 * el.glow) : '';
+  // A thin white-hot core makes bolts read as electric rather than as coloured lines.
+  const core = glowing
+    ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#ffffff" stroke-width="${fmt(el.width * 0.4)}" ` +
+      `stroke-opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/>`
+    : '';
   return (
-    `<g transform="translate(${fmt(f0.x)} ${fmt(f0.y)})" opacity="${fmt(f0.o)}">${halo}${line(el.width, 1)}` +
+    `<g transform="translate(${fmt(f0.x)} ${fmt(f0.y)})" opacity="${fmt(f0.o)}">${halo}${line(el.width, 1)}${core}` +
     `${animate(
       'opacity',
       el.frames.map((f) => fmt(f.o)),

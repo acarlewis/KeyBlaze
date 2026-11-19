@@ -54,8 +54,11 @@ export type BurstElement = ParticleElement | RingElement | BoltElement;
 export interface BurstTrack {
   readonly durationMs: number;
   readonly keyframes: number;
-  /** Half extents of the box that contains every element over the whole animation. */
+  /** Horizontal half extent of the box containing every visible element over the whole animation. */
   readonly halfWidth: number;
-  readonly halfHeight: number;
+  /** Extent above the origin (px). */
+  readonly up: number;
+  /** Extent below the origin (px). Decoration images are baseline-pinned, so this decides the anchor. */
+  readonly down: number;
   readonly elements: readonly BurstElement[];
 }

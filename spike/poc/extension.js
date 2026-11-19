@@ -319,6 +319,13 @@ async function handle(op, p) {
     case 'fixedClear':
       vscode.window.activeTextEditor.setDecorations(fixedTypes.get(p.id), []);
       return { ok: true };
+    case 'keyblaze': {
+      // Read the real KeyBlaze extension's diagnostic API (used by test/visual/verify-placement.mjs).
+      const ext = vscode.extensions.getExtension(p.id);
+      if (!ext) throw new Error(`extension ${p.id} not loaded`);
+      const api = ext.isActive ? ext.exports : await ext.activate();
+      return api.getStats();
+    }
     case 'burstStats':
       return { burstGenMs: burstGenMs.splice(0) };
     default:

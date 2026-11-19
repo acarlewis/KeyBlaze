@@ -55,8 +55,23 @@ export async function openFixture(
 }
 
 /** Simulates real keyboard input through VS Code's `type` command. */
-export async function typeText(text: string): Promise<void> {
-  for (const ch of text) await vscode.commands.executeCommand('type', { text: ch });
+export async function typeText(text: string, delayMs = 0): Promise<void> {
+  for (const ch of text) {
+    await vscode.commands.executeCommand('type', { text: ch });
+    if (delayMs) await wait(delayMs);
+  }
+}
+
+/** Places a single caret at line/character (0-based) and waits for the editor to settle. */
+export async function placeCaret(
+  editor: vscode.TextEditor,
+  line: number,
+  character: number,
+): Promise<void> {
+  const pos = new vscode.Position(line, character);
+  editor.selection = new vscode.Selection(pos, pos);
+  editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+  await wait(150);
 }
 
 export async function closeAllEditors(): Promise<void> {

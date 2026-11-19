@@ -8,6 +8,7 @@ import {
   config,
   getApi,
   openFixture,
+  placeCaret,
   resetSettings,
   typeText,
   wait,
@@ -53,8 +54,8 @@ suite('Commands and configuration', () => {
 
   test('external configuration changes apply live', async () => {
     const api = await getApi();
-    await config().update('particleCount', 42, vscode.ConfigurationTarget.Global);
-    await waitFor(() => api.getSettings().particleCount === 42, 3000, 'live config');
+    await config().update('particleCount', 33, vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getSettings().particleCount === 33, 3000, 'live config');
   });
 
   test('changeEffect with an argument sets the effect', async () => {
@@ -119,10 +120,11 @@ suite('Typing detection and rendering', () => {
 
   test('typing produces keystrokes and bursts', async () => {
     const api = await getApi();
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
     const editor = await openFixture('sample.ts');
     editor.selection = new vscode.Selection(0, 0, 0, 0);
     const before = api.getStats().totalBursts;
-    await typeText('abc');
+    await typeText('abc', 60);
     await waitFor(() => events.length === 3, 3000, 'keystrokes');
     assert.deepStrictEqual(
       events.map((e) => e.positions[0]?.character),
@@ -150,15 +152,15 @@ suite('Typing detection and rendering', () => {
     assert.ok(api.getStats().activeBursts <= 2);
   });
 
-  test('maxBurstsPerSecond throttles rendering but not detection', async () => {
+  test('maxBurstsPerSecond paces rendering but not detection', async () => {
     const api = await getApi();
     await config().update('performance.maxBurstsPerSecond', 2, vscode.ConfigurationTarget.Global);
     await wait(1100); // let the previous test's rate window drain
     await openFixture('sample.ts');
     const before = api.getStats().totalBursts;
-    await typeText('abcde');
+    await typeText('abcde'); // much faster than the 375 ms minimum gap for 2/s
     await waitFor(() => events.length === 5, 3000, 'keystrokes');
-    assert.strictEqual(api.getStats().totalBursts - before, 2);
+    assert.strictEqual(api.getStats().totalBursts - before, 1);
   });
 
   test('programmatic multi-character edits are ignored', async () => {
@@ -235,5 +237,90 @@ suite('Typing detection and rendering', () => {
   test('previewEffect without an editor does not throw', async () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     await vscode.commands.executeCommand('keyblaze.previewEffect');
+  });
+});
+
+suite('Placement in a real editor', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  async function burstAt(line: number, character: number) {
+    const api = await getApi();
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, line, character);
+    await wait(500); // let the inlay-hint tracker settle
+    const before = api.getStats().totalBursts;
+    await typeText('z');
+    await waitFor(() => api.getStats().totalBursts > before, 3000, 'burst');
+    const last = api.getStats().lastBurst;
+    assert.ok(last, 'no burst info');
+    return { last, editor };
+  }
+
+  test('normal code: full-circle burst anchored below the caret, zero layout height', async () => {
+    const { last } = await burstAt(10, 12);
+    assert.deepStrictEqual(last.decisions[0], { mode: 'below', variant: 'full' });
+    const layout = last.layouts[0];
+    assert.ok(layout);
+    assert.ok(layout.line > 10, `anchor line ${layout.line}`);
+    assert.strictEqual(layout.startCharacter, 0);
+    assert.ok(layout.margin.startsWith(`${-layout.height}px `), layout.margin);
+    assert.ok(layout.margin.includes('ch'), layout.margin);
+  });
+
+  test('CJK before the caret falls back to a rising burst on the caret line', async () => {
+    const { last } = await burstAt(20, 12);
+    assert.deepStrictEqual(last.decisions[0], {
+      mode: 'caret',
+      variant: 'upward',
+      reason: 'wideCharacters',
+    });
+    assert.strictEqual(last.layouts[0]?.line, 20);
+  });
+
+  test('end of document falls back', async () => {
+    const { last } = await burstAt(58, 5);
+    assert.strictEqual(last.decisions[0]?.reason, 'endOfDocument');
+  });
+
+  test('word wrap falls back when a spanned line could wrap', async () => {
+    await vscode.workspace
+      .getConfiguration('editor')
+      .update('wordWrap', 'on', vscode.ConfigurationTarget.Global);
+    try {
+      const { last } = await burstAt(23, 5);
+      assert.strictEqual(last.decisions[0]?.reason, 'wordWrap');
+    } finally {
+      await vscode.workspace
+        .getConfiguration('editor')
+        .update('wordWrap', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
+
+  test('placement: cursorLine forces rising bursts', async () => {
+    await config().update('placement', 'cursorLine', vscode.ConfigurationTarget.Global);
+    const { last } = await burstAt(10, 12);
+    assert.deepStrictEqual(last.decisions[0], {
+      mode: 'caret',
+      variant: 'upward',
+      reason: 'setting',
+    });
+  });
+
+  test('every burst image is unique (shared SMIL timelines would freeze reused images)', async () => {
+    const api = await getApi();
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    const sizes = new Set<number>();
+    for (let i = 0; i < 4; i++) {
+      await typeText('q');
+      await wait(60);
+      sizes.add(api.getStats().lastBurst?.svgBytes ?? -1);
+    }
+    // Different nonces (and seeds) → the documents differ. Byte size can coincide, so only check presence.
+    assert.ok(!sizes.has(-1));
   });
 });

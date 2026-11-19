@@ -3,7 +3,6 @@ import { EFFECT_DESCRIPTIONS, EFFECT_LABELS } from '../config/labels';
 import { PRESETS } from '../config/presets';
 import type { EffectId, PresetId } from '../config/schema';
 import { EFFECT_IDS, PRESET_IDS } from '../config/schema';
-import { runRenderingSpike } from '../dev/renderingSpike';
 import type { DecorationSlotPool } from '../services/DecorationRenderer';
 import type { EffectsController } from '../services/EffectsController';
 import type { SettingsService } from '../services/SettingsService';
@@ -20,7 +19,6 @@ export const COMMAND_IDS = {
   applyPreset: 'keyblaze.applyPreset',
   previewEffect: 'keyblaze.previewEffect',
   resetSettings: 'keyblaze.resetSettings',
-  renderingSpike: 'keyblaze.dev.renderingSpike',
 } as const;
 
 export interface CommandDeps {
@@ -147,7 +145,5 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
       await settings.resetAll();
       vscode.window.setStatusBarMessage('KeyBlaze: settings reset', 2500);
     }),
-
-    register(COMMAND_IDS.renderingSpike, () => runRenderingSpike(deps.context, logger)),
   ];
 }

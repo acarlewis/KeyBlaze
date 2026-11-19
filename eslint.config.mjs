@@ -10,6 +10,7 @@ export default tseslint.config(
       'node_modules/**',
       '.vscode-test/**',
       'test/fixtures/**',
+      'test/visual/**',
       '*.mjs',
     ],
   },

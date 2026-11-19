@@ -203,7 +203,7 @@ suite('ParticleEngine', () => {
       for (const f of el.frames) {
         if (f.o <= 0) continue;
         assert.ok(Math.abs(f.x) <= track.halfWidth);
-        assert.ok(Math.abs(f.y) <= track.halfHeight);
+        assert.ok(f.y <= track.down && -f.y <= track.up);
       }
     }
     const clamped = new ParticleEngine().simulate(
@@ -211,11 +211,30 @@ suite('ParticleEngine', () => {
       options({ maxHalfExtent: 50 }),
     );
     assert.strictEqual(clamped.halfWidth, 50);
-    assert.strictEqual(clamped.halfHeight, 50);
+    assert.strictEqual(clamped.down, 50);
   });
 
   test('measure has a minimum extent for empty bursts', () => {
-    assert.deepStrictEqual(measure([], 100), { halfWidth: 4, halfHeight: 4 });
+    assert.deepStrictEqual(measure([], 100), { halfWidth: 4, up: 4, down: 4 });
+  });
+
+  test('up and down extents are measured separately', () => {
+    const track = new ParticleEngine().simulate(
+      (e) => e.particle({ vx: 0, vy: -300, size: 2, color: '#fff', shape: 'circle' }),
+      options(),
+    );
+    assert.ok(track.up > 20);
+    assert.ok(track.down < 10);
+  });
+
+  test('rings can drift', () => {
+    const track = new ParticleEngine().simulate(
+      (e) => e.ring({ radiusFrom: 2, radiusTo: 10, vy: -100, strokeWidth: 1, color: '#fff' }),
+      options(),
+    );
+    const frames = track.elements[0]?.frames ?? [];
+    assert.strictEqual(frames[0]?.y, 0);
+    assert.ok((frames.at(-1)?.y ?? 0) < -50);
   });
 
   test('localLife maps burst time to element life', () => {

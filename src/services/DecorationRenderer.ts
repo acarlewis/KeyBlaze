@@ -1,16 +1,11 @@
 import * as vscode from 'vscode';
-import { anchorRange, attachmentMargin } from '../render/geometry';
+import type { Layout } from '../core/placement';
 import type { Logger } from '../utils/logger';
 
-export interface EffectImage {
+/** One effect image positioned by a placement layout. */
+export interface PlacedImage {
+  readonly layout: Layout;
   readonly uri: vscode.Uri;
-  readonly width: number;
-  readonly height: number;
-}
-
-export interface BurstPlacement {
-  readonly position: vscode.Position;
-  readonly image: EffectImage;
 }
 
 interface Slot {
@@ -23,7 +18,7 @@ interface Slot {
 /**
  * A fixed ring of decoration types ("slots"). Each burst occupies one slot for its lifetime.
  * Setting decorations on one slot never re-renders another slot's burst, the number of live DOM
- * nodes and CSS rules is capped, and the oldest burst is recycled when the pool is full.
+ * nodes is capped, and the oldest burst is recycled when the pool is full.
  */
 export class DecorationSlotPool implements vscode.Disposable {
   private slots: Slot[] = [];
@@ -45,30 +40,22 @@ export class DecorationSlotPool implements vscode.Disposable {
   }
 
   /** Shows one burst (possibly at several cursors) in `editor` for `lifetimeMs`. */
-  show(
-    editor: vscode.TextEditor,
-    placements: readonly BurstPlacement[],
-    lifetimeMs: number,
-    lineHeight: number,
-  ): boolean {
-    if (this.disposed || placements.length === 0) return false;
+  show(editor: vscode.TextEditor, images: readonly PlacedImage[], lifetimeMs: number): boolean {
+    if (this.disposed || images.length === 0) return false;
     const slot = this.acquire();
     if (!slot) return false;
 
-    const options: vscode.DecorationOptions[] = placements.map(({ position, image }) => {
-      const r = anchorRange(position);
-      return {
-        range: new vscode.Range(r.start.line, r.start.character, r.end.line, r.end.character),
-        renderOptions: {
-          after: {
-            contentIconPath: image.uri,
-            width: `${image.width}px`,
-            height: `${image.height}px`,
-            margin: attachmentMargin(image.width, image.height, lineHeight),
-          },
+    const options: vscode.DecorationOptions[] = images.map(({ layout, uri }) => ({
+      range: new vscode.Range(layout.line, layout.startCharacter, layout.line, layout.endCharacter),
+      renderOptions: {
+        after: {
+          contentIconPath: uri,
+          width: `${layout.width}px`,
+          height: `${layout.height}px`,
+          margin: layout.margin,
         },
-      };
-    });
+      },
+    }));
 
     try {
       editor.setDecorations(slot.type, options);

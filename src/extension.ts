@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import { registerCommands } from './commands/registerCommands';
 import type { KeyBlazeSettings } from './config/schema';
 import { DecorationSlotPool } from './services/DecorationRenderer';
+import type { LastBurstInfo } from './services/EffectsController';
 import { EffectsController } from './services/EffectsController';
+import { InlayHintTracker } from './services/InlayHintTracker';
 import { SettingsService } from './services/SettingsService';
 import { StatusBarService } from './services/StatusBarService';
 import type { KeystrokeEvent } from './services/TypingDetector';
@@ -16,7 +18,13 @@ import { Logger } from './utils/logger';
 export interface KeyBlazeApi {
   getSettings(): Readonly<KeyBlazeSettings>;
   onKeystroke: vscode.Event<KeystrokeEvent>;
-  getStats(): { totalBursts: number; activeBursts: number; poolSize: number; statusText: string };
+  getStats(): {
+    totalBursts: number;
+    activeBursts: number;
+    poolSize: number;
+    statusText: string;
+    lastBurst: LastBurstInfo | undefined;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
@@ -24,7 +32,8 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
   const settings = new SettingsService();
   const pool = new DecorationSlotPool(settings.get()['performance.maxConcurrentBursts'], logger);
   const detector = new TypingDetector(settings);
-  const effects = new EffectsController(settings, detector, pool, logger);
+  const inlayHints = new InlayHintTracker();
+  const effects = new EffectsController(settings, detector, pool, logger, inlayHints);
   const statusBar = new StatusBarService(settings);
 
   context.subscriptions.push(
@@ -32,6 +41,7 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
     settings,
     pool,
     detector,
+    inlayHints,
     effects,
     statusBar,
     ...registerCommands({ context, settings, effects, pool, logger }),
@@ -47,6 +57,7 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
       activeBursts: pool.activeCount,
       poolSize: pool.size,
       statusText: statusBar.text,
+      lastBurst: effects.lastBurst,
     }),
   };
 }

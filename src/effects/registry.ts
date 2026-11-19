@@ -1,20 +1,28 @@
 import type { EffectId } from '../config/schema';
+import { EFFECT_IDS } from '../config/schema';
 import type { Effect } from './Effect';
+import { EnergyBurst } from './EnergyBurst';
+import { FireEffect } from './FireEffect';
+import { FireworksEffect } from './FireworksEffect';
+import { LightningEffect } from './LightningEffect';
+import { MinimalEffect } from './MinimalEffect';
 import { ParticleBurst } from './ParticleBurst';
+import { StarEffect } from './StarEffect';
 
-/**
- * Effect lookup. Phase 3 ships the engine with ParticleBurst. The remaining effects are added in
- * Phase 4. Until then `getEffect` reports the fallback through `isImplemented` so the UI never
- * claims an effect it doesn't have.
- */
-const EFFECTS: Partial<Record<EffectId, Effect>> = {
+const EFFECTS: Readonly<Record<EffectId, Effect>> = {
   particles: ParticleBurst,
+  fire: FireEffect,
+  lightning: LightningEffect,
+  energy: EnergyBurst,
+  fireworks: FireworksEffect,
+  stars: StarEffect,
+  minimal: MinimalEffect,
 };
 
 export function getEffect(id: EffectId): Effect {
-  return EFFECTS[id] ?? ParticleBurst;
+  return EFFECTS[id];
 }
 
-export function isImplemented(id: EffectId): boolean {
-  return EFFECTS[id] !== undefined;
+export function allEffects(): Effect[] {
+  return EFFECT_IDS.map((id) => EFFECTS[id]);
 }

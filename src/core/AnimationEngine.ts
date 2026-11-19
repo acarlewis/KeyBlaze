@@ -10,20 +10,32 @@ import type { BurstTrack } from './BurstTrack';
 import { ParticleEngine } from './ParticleEngine';
 import type { QualityProfile } from './quality';
 import { qualityProfile } from './quality';
+import type { EffectVariant } from './placement';
 import { mulberry32, randomSeed } from './random';
 
 export type Clock = () => number;
 
-/** Sliding one-second window limiter. */
+/**
+ * Paced rate limiter: at most `limit` per sliding second, and successive acquisitions at least
+ * 0.75 × (1000 / limit) ms apart. The minimum gap spreads bursts evenly through fast typing (at 25
+ * keystrokes/s with a limit of 12, every second keystroke renders) instead of rendering the first 12
+ * keystrokes of each second and then nothing.
+ */
 export class RateLimiter {
   private readonly stamps: number[] = [];
 
   constructor(private readonly clock: Clock = Date.now) {}
 
+  static minGapMs(limitPerSecond: number): number {
+    return (0.75 * 1000) / Math.max(1, limitPerSecond);
+  }
+
   tryAcquire(limitPerSecond: number): boolean {
     const now = this.clock();
     while (this.stamps.length > 0 && now - (this.stamps[0] ?? 0) >= 1000) this.stamps.shift();
     if (this.stamps.length >= limitPerSecond) return false;
+    const last = this.stamps[this.stamps.length - 1];
+    if (last !== undefined && now - last < RateLimiter.minGapMs(limitPerSecond)) return false;
     this.stamps.push(now);
     return true;
   }
@@ -56,6 +68,8 @@ export interface BurstRequestOptions {
   readonly effect?: Effect;
   /** Extra multiplier on the quality profile, e.g. from PerformanceManager. 0–1. */
   readonly budgetScale?: number;
+  /** `upward` for caret-anchored placement (see core/placement.ts). Defaults to `full`. */
+  readonly variant?: EffectVariant;
 }
 
 export interface EngineStats {
@@ -80,24 +94,32 @@ export class AnimationEngine {
     return { ...this.stats };
   }
 
-  /** Returns a burst to render, or `undefined` when rate-limited. */
-  requestBurst(
-    settings: EngineSettings,
-    options: BurstRequestOptions = {},
-  ): BurstTrack | undefined {
+  /** Rate-limits one keystroke. Returns false when this keystroke should not render a burst. */
+  admit(
+    settings: Pick<EngineSettings, 'performance.maxBurstsPerSecond'>,
+    bypassRateLimit = false,
+  ): boolean {
     this.stats.requested++;
-    if (
-      !options.bypassRateLimit &&
-      !this.limiter.tryAcquire(settings['performance.maxBurstsPerSecond'])
-    ) {
+    if (!bypassRateLimit && !this.limiter.tryAcquire(settings['performance.maxBurstsPerSecond'])) {
       this.stats.throttled++;
-      return undefined;
+      return false;
     }
+    this.stats.rendered++;
+    return true;
+  }
+
+  /** Simulates one burst (no rate limiting). */
+  simulate(settings: EngineSettings, options: BurstRequestOptions = {}): BurstTrack {
     const profile = qualityProfile(settings['performance.quality'], settings.performanceMode);
     const effect = options.effect ?? getEffect(settings.effect);
-    const params = buildEffectParams(settings, profile, options.budgetScale ?? 1);
+    const params = buildEffectParams(
+      settings,
+      profile,
+      options.budgetScale ?? 1,
+      options.variant ?? 'full',
+    );
     const rng = mulberry32(options.seed ?? this.seeds());
-    const track = this.particles.simulate((emitter) => effect.spawn(emitter, params), {
+    return this.particles.simulate((emitter) => effect.spawn(emitter, params), {
       durationMs: settings.particleLifetime,
       keyframes: profile.keyframes,
       substeps: profile.substeps,
@@ -105,8 +127,16 @@ export class AnimationEngine {
       maxHalfExtent: profile.maxHalfExtent,
       rng,
     });
-    this.stats.rendered++;
-    return track;
+  }
+
+  /** `admit` + `simulate`. Returns `undefined` when rate-limited. */
+  requestBurst(
+    settings: EngineSettings,
+    options: BurstRequestOptions = {},
+  ): BurstTrack | undefined {
+    return this.admit(settings, options.bypassRateLimit)
+      ? this.simulate(settings, options)
+      : undefined;
   }
 }
 
@@ -118,6 +148,7 @@ export function buildEffectParams(
   settings: EngineSettings,
   profile: QualityProfile,
   budgetScale = 1,
+  variant: EffectVariant = 'full',
 ): EffectParams {
   const scale = profile.particleScale * clampScale(budgetScale);
   return {
@@ -130,5 +161,6 @@ export function buildEffectParams(
     colors: settings.colors.length > 0 ? settings.colors : ['#ffffff'],
     shape: settings.particleShape,
     glow: profile.glow,
+    variant,
   };
 }

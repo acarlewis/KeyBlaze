@@ -75,11 +75,6 @@
         "command": "keyblaze.resetSettings",
         "title": "Reset Settings",
         "category": "KeyBlaze"
-      },
-      {
-        "command": "keyblaze.dev.renderingSpike",
-        "title": "Run Rendering Spike (Developer)",
-        "category": "KeyBlaze"
       }
     ],
     "configuration": {
@@ -159,9 +154,9 @@
           "type": "integer",
           "default": 14,
           "minimum": 1,
-          "maximum": 100,
+          "maximum": 40,
           "order": 4,
-          "markdownDescription": "Particles spawned per keystroke, before performance limits. Overrides the preset when set."
+          "markdownDescription": "Particles spawned per keystroke, before performance limits (1–40). Overrides the preset when set."
         },
         "keyblaze.particleSize": {
           "type": "number",
@@ -183,7 +178,7 @@
           "type": "integer",
           "default": 650,
           "minimum": 150,
-          "maximum": 3000,
+          "maximum": 2000,
           "order": 7,
           "markdownDescription": "How long a burst lives, in milliseconds. Overrides the preset when set."
         },
@@ -231,6 +226,20 @@
           "default": true,
           "order": 10,
           "description": "Also trigger effects for Backspace and Delete."
+        },
+        "keyblaze.placement": {
+          "type": "string",
+          "default": "auto",
+          "order": 11,
+          "enum": [
+            "auto",
+            "cursorLine"
+          ],
+          "enumDescriptions": [
+            "Full-circle effects centred on the cursor where the layout allows it, otherwise rising effects on the cursor line.",
+            "Always place rising effects on the cursor line. Use this with editor font zoom, proportional fonts or other layouts where full-circle effects appear misplaced."
+          ],
+          "markdownDescription": "How effects are attached to the cursor. VS Code can only draw decoration images upward from the text baseline, so full-circle effects are drawn from a few lines below the cursor. `auto` falls back to rising effects on the cursor line next to wide characters (CJK, emoji), inlay hints, wrapped or folded lines and at the end of the document."
         },
         "keyblaze.cursor.effect": {
           "type": "string",
@@ -363,19 +372,19 @@
         },
         "keyblaze.performance.maxConcurrentBursts": {
           "type": "integer",
-          "default": 16,
+          "default": 8,
           "minimum": 1,
-          "maximum": 48,
+          "maximum": 24,
           "order": 61,
           "description": "Maximum number of bursts on screen at once. The oldest burst is recycled first."
         },
         "keyblaze.performance.maxBurstsPerSecond": {
           "type": "integer",
-          "default": 24,
+          "default": 12,
           "minimum": 1,
-          "maximum": 60,
+          "maximum": 30,
           "order": 62,
-          "description": "Maximum bursts started per second. Extra keystrokes still count towards combos."
+          "description": "Maximum bursts started per second, evenly paced: in very fast typing, bursts render on every second keystroke. Every keystroke still counts towards combos."
         },
         "keyblaze.performance.frameRateLimit": {
           "type": "integer",
@@ -442,7 +451,8 @@
     "test:unit": "npm run compile-tests && mocha --ui tdd \"out/test/unit/**/*.test.js\"",
     "test:integration": "npm run build && npm run compile-tests && vscode-test",
     "test": "npm run test:unit && npm run test:integration",
-    "package": "vsce package"
+    "package": "vsce package",
+    "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
