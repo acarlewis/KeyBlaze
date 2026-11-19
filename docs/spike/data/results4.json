@@ -1,0 +1,83 @@
+{
+  "startedAt": "2026-11-19T11:48:10.561Z",
+  "steps": [
+    {
+      "label": "baseline idle",
+      "idleRendererBusyPct": 6.3,
+      "idleFps": 144,
+      "jsHeapMB": 71.3,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1494,
+      "images": 0
+    },
+    {
+      "label": "effects ON 12cps x150",
+      "typed": 150,
+      "targetCps": 12,
+      "achievedCps": 12
+    },
+    {
+      "label": "idle after 150 bursts",
+      "idleRendererBusyPct": 8.1,
+      "idleFps": 145,
+      "jsHeapMB": 97.3,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1498,
+      "images": 0
+    },
+    {
+      "label": "effects ON 25cps x200",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 24.9
+    },
+    {
+      "label": "idle after +200 bursts",
+      "idleRendererBusyPct": 10.6,
+      "idleFps": 145,
+      "jsHeapMB": 107.5,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1502,
+      "images": 0
+    },
+    {
+      "label": "idle again (+3s)",
+      "idleRendererBusyPct": 8.8,
+      "idleFps": 145,
+      "jsHeapMB": 108.2,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1502,
+      "images": 0
+    },
+    {
+      "label": "idle after closing the editor",
+      "idleRendererBusyPct": 15.1,
+      "idleFps": 140,
+      "jsHeapMB": 67.8,
+      "cssRules": 12569,
+      "cssRulesWithSvg": 10,
+      "nodes": 408,
+      "images": 0
+    },
+    {
+      "label": "effects OFF 25cps x200 (new editor)",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 25
+    },
+    {
+      "label": "idle after OFF session",
+      "idleRendererBusyPct": 5.8,
+      "idleFps": 144,
+      "jsHeapMB": 74.2,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1498,
+      "images": 0
+    }
+  ]
+}

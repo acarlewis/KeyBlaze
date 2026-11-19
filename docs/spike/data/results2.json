@@ -1,0 +1,186 @@
+{
+  "startedAt": "2026-11-19T11:39:54.500Z",
+  "vscodeVersion": "1.147.0",
+  "continuity": {
+    "caret_typingOnAnchorLine": {
+      "measuredAtMs": 2005,
+      "expectedFraction": 0.67,
+      "anchorLineBar": 0.68,
+      "controlBar": 0.71
+    },
+    "caret_noTyping": {
+      "measuredAtMs": 2010,
+      "expectedFraction": 0.67,
+      "anchorLineBar": 0.69,
+      "controlBar": 0.7
+    },
+    "below_typingOnCaretLine": {
+      "measuredAtMs": 2007,
+      "expectedFraction": 0.67,
+      "anchorLineBar": 0.68,
+      "controlBar": 0.68
+    }
+  },
+  "sharedTimeline": {
+    "firstAt2000ms": 0.68,
+    "identicalUriAddedAt1500ms_measuredAt500ms": 0.65,
+    "uniqueUriAddedAt1500ms_measuredAt500ms": 0.25,
+    "interpretation": "If identicalUri ≈ first, Chromium shares one SVG timeline per image URL."
+  },
+  "scrollContinuity": {
+    "imagesWhileAway": 1,
+    "measuredAtMs": 2014,
+    "expectedIfContinuous": 0.67,
+    "bar": 0.62,
+    "expectedIfRestartedOnReturn": "≈0.27"
+  },
+  "performance": [
+    {
+      "label": "OFF",
+      "cps": 30,
+      "bursts": 0,
+      "frameGapP50": 6.9,
+      "frameGapP95": 7.3,
+      "framesOver50ms": 0,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 9.5,
+        "p50": 22.69,
+        "p95": 263.86,
+        "max": 325.95
+      },
+      "styleRecalcMsPerSec": 12.4,
+      "layoutMsPerSec": 15.7,
+      "rendererTaskMsPerSec": 542,
+      "extHostBurstMs": {
+        "n": 0
+      }
+    },
+    {
+      "label": "KeyBlaze defaults (pool 16, cap 24/s, 14 particles, high)",
+      "cps": 30,
+      "bursts": 210,
+      "frameGapP50": 7,
+      "frameGapP95": 20.8,
+      "framesOver50ms": 2,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 308.43,
+        "p50": 496.73,
+        "p95": 682.95,
+        "max": 735.1
+      },
+      "styleRecalcMsPerSec": 54.5,
+      "layoutMsPerSec": 17.4,
+      "rendererTaskMsPerSec": 791.9,
+      "extHostBurstMs": {
+        "n": 210,
+        "min": 0.22,
+        "p50": 0.32,
+        "p95": 0.7,
+        "max": 4.43
+      }
+    },
+    {
+      "label": "Proposed defaults (pool 8, cap 12/s, 14 particles, high)",
+      "cps": 30,
+      "bursts": 161,
+      "frameGapP50": 7,
+      "frameGapP95": 20.8,
+      "framesOver50ms": 2,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 269.73,
+        "p50": 425.78,
+        "p95": 691.94,
+        "max": 692.84
+      },
+      "styleRecalcMsPerSec": 47.7,
+      "layoutMsPerSec": 18.2,
+      "rendererTaskMsPerSec": 774.1,
+      "extHostBurstMs": {
+        "n": 161,
+        "min": 0.21,
+        "p50": 0.29,
+        "p95": 0.53,
+        "max": 0.71
+      }
+    },
+    {
+      "label": "Performance mode (pool 8, cap 12/s, perf profile)",
+      "cps": 30,
+      "bursts": 145,
+      "frameGapP50": 7,
+      "frameGapP95": 20.8,
+      "framesOver50ms": 0,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 251.04,
+        "p50": 362.59,
+        "p95": 457.74,
+        "max": 609.67
+      },
+      "styleRecalcMsPerSec": 48.4,
+      "layoutMsPerSec": 20.7,
+      "rendererTaskMsPerSec": 740.4,
+      "extHostBurstMs": {
+        "n": 145,
+        "min": 0.09,
+        "p50": 0.14,
+        "p95": 0.3,
+        "max": 0.74
+      }
+    },
+    {
+      "label": "Worst case (pool 16, cap 24/s, 60 particles, high)",
+      "cps": 30,
+      "bursts": 210,
+      "frameGapP50": 7,
+      "frameGapP95": 138.8,
+      "framesOver50ms": 143,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 304.09,
+        "p50": 614.25,
+        "p95": 842.81,
+        "max": 862.85
+      },
+      "styleRecalcMsPerSec": 44.7,
+      "layoutMsPerSec": 7.1,
+      "rendererTaskMsPerSec": 856.7,
+      "extHostBurstMs": {
+        "n": 210,
+        "min": 0.65,
+        "p50": 1.07,
+        "p95": 2.17,
+        "max": 4.1
+      }
+    },
+    {
+      "label": "Worst case capped (pool 8, cap 12/s, 60 particles, medium)",
+      "cps": 30,
+      "bursts": 210,
+      "frameGapP50": 7,
+      "frameGapP95": 180.5,
+      "framesOver50ms": 220,
+      "caretLatencyMs": {
+        "n": 26,
+        "min": 501,
+        "p50": 585.81,
+        "p95": 711.04,
+        "max": 792.08
+      },
+      "styleRecalcMsPerSec": 20.2,
+      "layoutMsPerSec": 5.9,
+      "rendererTaskMsPerSec": 918.8,
+      "extHostBurstMs": {
+        "n": 210,
+        "min": 0.37,
+        "p50": 0.58,
+        "p95": 1.28,
+        "max": 5.09
+      }
+    }
+  ],
+  "finishedAt": "2026-11-19T11:42:36.858Z"
+}

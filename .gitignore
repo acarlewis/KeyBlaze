@@ -4,3 +4,6 @@ out/
 .vscode-test/
 *.vsix
 .DS_Store
+
+# Spike harness output (VS Code profiles, screenshots, raw JSON)
+spike/results/

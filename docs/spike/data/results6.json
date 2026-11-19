@@ -1,0 +1,299 @@
+{
+  "startedAt": "2026-11-19T11:51:17.659Z",
+  "vscodeVersion": "1.147.0",
+  "performance": [
+    {
+      "label": "OFF",
+      "targetCps": 12,
+      "achievedCps": 12,
+      "bursts": 0,
+      "keyToCaretFrameMs": {
+        "n": 120,
+        "min": 5.7,
+        "p50": 10.3,
+        "p95": 14.7,
+        "max": 20.9
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 6.9,
+        "p95": 7.2,
+        "max": 20.8
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 22.5,
+      "styleRecalcMsPerSec": 10.4,
+      "layoutMsPerSec": 7.3,
+      "extHostBurstMs": {
+        "n": 0
+      }
+    },
+    {
+      "label": "KeyBlaze current defaults (pool 16, ≤24/s, 14 particles, high)",
+      "targetCps": 12,
+      "achievedCps": 12,
+      "bursts": 120,
+      "keyToCaretFrameMs": {
+        "n": 120,
+        "min": 5.6,
+        "p50": 10.5,
+        "p95": 20.7,
+        "max": 34.2
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 6.9,
+        "p95": 13.7,
+        "max": 34.7
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 62,
+      "styleRecalcMsPerSec": 84.3,
+      "layoutMsPerSec": 20.2,
+      "extHostBurstMs": {
+        "n": 120,
+        "min": 0.19,
+        "p50": 0.3,
+        "p95": 1.56,
+        "max": 2.5
+      }
+    },
+    {
+      "label": "Capped (pool 8, ≤12/s, 14 particles, high)",
+      "targetCps": 12,
+      "achievedCps": 12,
+      "bursts": 111,
+      "keyToCaretFrameMs": {
+        "n": 120,
+        "min": 5.4,
+        "p50": 10.1,
+        "p95": 15.1,
+        "max": 22.2
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 7,
+        "p95": 7.3,
+        "max": 27.7
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 62.1,
+      "styleRecalcMsPerSec": 74.3,
+      "layoutMsPerSec": 15.2,
+      "extHostBurstMs": {
+        "n": 111,
+        "min": 0.15,
+        "p50": 0.26,
+        "p95": 0.6,
+        "max": 0.78
+      }
+    },
+    {
+      "label": "Performance mode (pool 8, ≤12/s, perf profile)",
+      "targetCps": 12,
+      "achievedCps": 12,
+      "bursts": 111,
+      "keyToCaretFrameMs": {
+        "n": 120,
+        "min": 6.1,
+        "p50": 10.3,
+        "p95": 16.3,
+        "max": 25.3
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 6.9,
+        "p95": 7.2,
+        "max": 20.8
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 58.7,
+      "styleRecalcMsPerSec": 62.2,
+      "layoutMsPerSec": 13.2,
+      "extHostBurstMs": {
+        "n": 111,
+        "min": 0.08,
+        "p50": 0.12,
+        "p95": 0.37,
+        "max": 0.92
+      }
+    },
+    {
+      "label": "Worst case (pool 16, ≤24/s, 60 particles, high)",
+      "targetCps": 12,
+      "achievedCps": 12,
+      "bursts": 120,
+      "keyToCaretFrameMs": {
+        "n": 120,
+        "min": 5.2,
+        "p50": 24.1,
+        "p95": 40.8,
+        "max": 47.6
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 20.8,
+        "p95": 34.6,
+        "max": 55.5
+      },
+      "framesOver50ms": 2,
+      "rendererBusyPct": 90.9,
+      "styleRecalcMsPerSec": 111.9,
+      "layoutMsPerSec": 15.8,
+      "extHostBurstMs": {
+        "n": 120,
+        "min": 0.65,
+        "p50": 1.04,
+        "p95": 1.75,
+        "max": 2.14
+      }
+    },
+    {
+      "label": "OFF",
+      "targetCps": 25,
+      "achievedCps": 25,
+      "bursts": 0,
+      "keyToCaretFrameMs": {
+        "n": 200,
+        "min": 6.3,
+        "p50": 10.6,
+        "p95": 15.2,
+        "max": 17.8
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 6.9,
+        "p95": 7.2,
+        "max": 20.7
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 39.4,
+      "styleRecalcMsPerSec": 8.2,
+      "layoutMsPerSec": 14.6,
+      "extHostBurstMs": {
+        "n": 0
+      }
+    },
+    {
+      "label": "KeyBlaze current defaults (pool 16, ≤24/s, 14 particles, high)",
+      "targetCps": 25,
+      "achievedCps": 25,
+      "bursts": 186,
+      "keyToCaretFrameMs": {
+        "n": 200,
+        "min": 4.9,
+        "p50": 14.1,
+        "p95": 24.9,
+        "max": 49.5
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 13.9,
+        "p95": 27.8,
+        "max": 41.7
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 99.4,
+      "styleRecalcMsPerSec": 154.3,
+      "layoutMsPerSec": 45.9,
+      "extHostBurstMs": {
+        "n": 186,
+        "min": 0.16,
+        "p50": 0.27,
+        "p95": 0.5,
+        "max": 0.88
+      }
+    },
+    {
+      "label": "Capped (pool 8, ≤12/s, 14 particles, high)",
+      "targetCps": 25,
+      "achievedCps": 25,
+      "bursts": 96,
+      "keyToCaretFrameMs": {
+        "n": 200,
+        "min": 3.4,
+        "p50": 10.4,
+        "p95": 17.9,
+        "max": 36.6
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 7,
+        "p95": 14,
+        "max": 48.4
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 88.6,
+      "styleRecalcMsPerSec": 84.2,
+      "layoutMsPerSec": 31.1,
+      "extHostBurstMs": {
+        "n": 96,
+        "min": 0.15,
+        "p50": 0.26,
+        "p95": 0.58,
+        "max": 0.75
+      }
+    },
+    {
+      "label": "Performance mode (pool 8, ≤12/s, perf profile)",
+      "targetCps": 25,
+      "achievedCps": 25,
+      "bursts": 96,
+      "keyToCaretFrameMs": {
+        "n": 200,
+        "min": 2.8,
+        "p50": 9.9,
+        "p95": 13.4,
+        "max": 29.2
+      },
+      "unmatchedKeys": 0,
+      "frameGapMs": {
+        "p50": 6.9,
+        "p95": 13.8,
+        "max": 27.8
+      },
+      "framesOver50ms": 0,
+      "rendererBusyPct": 80.8,
+      "styleRecalcMsPerSec": 72.8,
+      "layoutMsPerSec": 28,
+      "extHostBurstMs": {
+        "n": 96,
+        "min": 0.07,
+        "p50": 0.09,
+        "p95": 0.19,
+        "max": 0.32
+      }
+    },
+    {
+      "label": "Worst case (pool 16, ≤24/s, 60 particles, high)",
+      "targetCps": 25,
+      "achievedCps": 25,
+      "bursts": 186,
+      "keyToCaretFrameMs": {
+        "n": 196,
+        "min": 5,
+        "p50": 123.7,
+        "p95": 178.3,
+        "max": 193.5
+      },
+      "unmatchedKeys": 4,
+      "frameGapMs": {
+        "p50": 34.8,
+        "p95": 55.7,
+        "max": 201.2
+      },
+      "framesOver50ms": 24,
+      "rendererBusyPct": 104.1,
+      "styleRecalcMsPerSec": 163.3,
+      "layoutMsPerSec": 29.9,
+      "extHostBurstMs": {
+        "n": 186,
+        "min": 0.62,
+        "p50": 0.91,
+        "p95": 1.6,
+        "max": 2.25
+      }
+    }
+  ],
+  "finishedAt": "2026-11-19T11:53:11.150Z"
+}

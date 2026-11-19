@@ -1,0 +1,15 @@
+{
+  "name": "keyblaze-spike",
+  "displayName": "KeyBlaze Rendering Spike (PoC)",
+  "description": "Throwaway proof of concept for cursor-anchored effects. Not part of KeyBlaze.",
+  "version": "0.0.1",
+  "publisher": "keyblaze-spike",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "replay": {
+    "firstShowAt500ms": 0.32,
+    "reShows": [
+      {
+        "removedForMs": 100,
+        "barAt500ms": 0.92
+      },
+      {
+        "removedForMs": 1000,
+        "barAt500ms": 0.92
+      },
+      {
+        "removedForMs": 3000,
+        "barAt500ms": 0.92
+      }
+    ],
+    "expectedIfReplays": "≈0.33",
+    "expectedIfFrozenAtEnd": "1.0"
+  },
+  "styleCost": [
+    {
+      "label": "idle (no bursts) baseline",
+      "styleRecalcMsPerBurst": 0,
+      "layoutMsPerBurst": 0,
+      "recalcCountPerBurst": 0,
+      "rendererTaskMsPerBurst": 0.04
+    },
+    {
+      "label": "unique image per burst (instance renderOptions, current approach)",
+      "styleRecalcMsPerBurst": 4.53,
+      "layoutMsPerBurst": 0.46,
+      "recalcCountPerBurst": 3.6,
+      "rendererTaskMsPerBurst": 49.87
+    },
+    {
+      "label": "fixed-image types toggled (8 pre-built variants)",
+      "styleRecalcMsPerBurst": 0.77,
+      "layoutMsPerBurst": 0.36,
+      "recalcCountPerBurst": 1.4,
+      "rendererTaskMsPerBurst": 19.5
+    }
+  ]
+}

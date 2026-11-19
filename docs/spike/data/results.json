@@ -1,0 +1,646 @@
+{
+  "startedAt": "2026-11-19T11:33:36.105Z",
+  "vscodeVersion": "1.147.0",
+  "cursorApi": {
+    "keystrokes": 10,
+    "changeEvents": 10,
+    "changeLatencyMs": {
+      "n": 10,
+      "min": 3,
+      "p50": 7,
+      "p95": 158,
+      "max": 158
+    },
+    "selectionEvents": 14,
+    "selectionKinds": [
+      1
+    ],
+    "lastSelectionsAfterTyping": {
+      "column": 1,
+      "line": 0,
+      "char": 13,
+      "kind": 1
+    },
+    "finalSelection": [
+      {
+        "line": 1,
+        "char": 25
+      }
+    ],
+    "visibleRanges": [
+      [
+        0,
+        41
+      ]
+    ],
+    "note": "Selection gives logical line/character only. There is no API for pixel coordinates."
+  },
+  "precision": {
+    "caret:middleOfLine": {
+      "w": 96,
+      "h": 52,
+      "dx": 0.19,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 0,
+      "imageH": 52
+    },
+    "caret:endOfLine": {
+      "w": 96,
+      "h": 52,
+      "dx": 0.3,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 0,
+      "imageH": 52
+    },
+    "caret:column0": {
+      "w": 96,
+      "h": 52,
+      "dx": 0,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 0,
+      "imageH": 52
+    },
+    "caret:emptyLine": {
+      "w": 96,
+      "h": 52,
+      "dx": 0,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 4,
+      "imageH": 52
+    },
+    "caret:afterTwoTabs": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.4,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 1,
+      "imageH": 52
+    },
+    "caret:afterCJK": {
+      "w": 96,
+      "h": 52,
+      "dx": 0.19,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 2,
+      "imageH": 52
+    },
+    "caret:afterEmoji": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.36,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 3,
+      "imageH": 52
+    },
+    "caret:deepInFile": {
+      "w": 96,
+      "h": 52,
+      "dx": 0.4,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 60,
+      "imageH": 52
+    },
+    "below:middleOfLine": {
+      "w": 96,
+      "h": 109,
+      "dx": 0.19,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 3,
+      "imageH": 109
+    },
+    "below:endOfLine": {
+      "w": 96,
+      "h": 109,
+      "dx": 0.25,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 3,
+      "imageH": 109
+    },
+    "below:column0": {
+      "w": 96,
+      "h": 109,
+      "dx": 0,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 3,
+      "imageH": 109
+    },
+    "below:emptyLine": {
+      "w": 96,
+      "h": 109,
+      "dx": 0,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 7,
+      "imageH": 109
+    },
+    "below:afterTwoTabs": {
+      "w": 96,
+      "h": 109,
+      "dx": -0.43,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 4,
+      "imageH": 109
+    },
+    "below:afterCJK": {
+      "w": 96,
+      "h": 109,
+      "dx": -12.43,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 5,
+      "imageH": 109
+    },
+    "below:afterEmoji": {
+      "w": 96,
+      "h": 109,
+      "dx": -8.04,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 6,
+      "imageH": 109
+    },
+    "below:deepInFile": {
+      "w": 96,
+      "h": 109,
+      "dx": 0.36,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 63,
+      "imageH": 109
+    },
+    "caret:wrappedSecondRow": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.08,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 5
+    },
+    "below:wrappedSecondRow": {
+      "w": 96,
+      "h": 109,
+      "dx": -0.41,
+      "dy": 19.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "anchorLine": 8
+    }
+  },
+  "typingFollow": {
+    "newestBurstOffsets": [
+      {
+        "dx": 0.24,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": -0.06,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": -0.36,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": 0.34,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": 0.04,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": -0.26,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": 0.44,
+        "dy": 0.1,
+        "textShiftY": 0
+      },
+      {
+        "dx": 0.14,
+        "dy": 0.1,
+        "textShiftY": 0
+      }
+    ],
+    "keystrokeToDecorationInDomMs": {
+      "n": 8,
+      "min": 20,
+      "p50": 26,
+      "p95": 36,
+      "max": 36
+    },
+    "note": "Includes CDP polling overhead (~2–5 ms)."
+  },
+  "animationContinuity": {
+    "caretAnchor_typingOnAnchorLine": {
+      "editedLineBarFraction": 0.71,
+      "controlBarFraction": 0.72,
+      "expectedIfContinuous": "≈0.66 at t≈2.0 s",
+      "expectedIfRestartedAtType": "≈0.27"
+    },
+    "caretAnchor_noTyping": {
+      "editedLineBarFraction": 1,
+      "controlBarFraction": 0.97,
+      "expectedIfContinuous": "≈0.66 at t≈2.0 s",
+      "expectedIfRestartedAtType": "≈0.27"
+    },
+    "belowAnchor_typingOnCaretLine": {
+      "editedLineBarFraction": 0.69,
+      "controlBarFraction": 0.7,
+      "expectedIfContinuous": "≈0.66 at t≈2.0 s",
+      "expectedIfRestartedAtType": "≈0.27"
+    }
+  },
+  "splitEditors": {
+    "editorsFound": 3,
+    "caretsFound": 3,
+    "offsets": [
+      {
+        "w": 96,
+        "h": 52,
+        "dx": 0,
+        "dy": 0.1,
+        "textShiftY": 0,
+        "lineHeightPx": 19,
+        "editorX": 53
+      },
+      {
+        "w": 96,
+        "h": 52,
+        "dx": -0.11,
+        "dy": 0.1,
+        "textShiftY": 0,
+        "lineHeightPx": 19,
+        "editorX": 500
+      },
+      {
+        "w": 96,
+        "h": 52,
+        "dx": 0.5,
+        "dy": 0.1,
+        "textShiftY": 0,
+        "lineHeightPx": 19,
+        "editorX": 947
+      }
+    ]
+  },
+  "scrolling": {
+    "beforeScroll": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53
+    },
+    "afterScroll3Lines": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53
+    },
+    "imagesWhileAnchorOffscreen": 0,
+    "afterScrollingBack": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53
+    },
+    "progressAfterScrollAwayAndBack": {
+      "fraction": null,
+      "expectedIfContinuous": "≈0.67 at t≈2.0 s",
+      "expectedIfRestartedOnReturn": "≈0.17"
+    }
+  },
+  "zoom": {
+    "default:caret": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "default:below": {
+      "w": 96,
+      "h": 109,
+      "dx": -0.04,
+      "dy": 0.1,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "windowZoom+1:caret": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.02,
+      "dy": 0.5,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "windowZoom+1:below": {
+      "w": 96,
+      "h": 109,
+      "dx": -0.03,
+      "dy": 0.5,
+      "textShiftY": 0,
+      "lineHeightPx": 19,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "windowZoom-1:caret": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": -0.05,
+      "textShiftY": 0,
+      "lineHeightPx": 18.990001678466797,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "windowZoom-1:below": {
+      "w": 96,
+      "h": 109,
+      "dx": -0.04,
+      "dy": -0.05,
+      "textShiftY": 0,
+      "lineHeightPx": 18.990001678466797,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "19px",
+      "assumedLineHeight": 19
+    },
+    "fontSize20:caret": {
+      "w": 96,
+      "h": 54,
+      "dx": -0.03,
+      "dy": 0.5,
+      "textShiftY": 0,
+      "lineHeightPx": 27,
+      "editorX": 53,
+      "renderedFontSize": "20px",
+      "renderedLineHeight": "27px",
+      "assumedLineHeight": 27
+    },
+    "fontSize20:below": {
+      "w": 96,
+      "h": 108,
+      "dx": -0.05,
+      "dy": 0.5,
+      "textShiftY": 0,
+      "lineHeightPx": 27,
+      "editorX": 53,
+      "renderedFontSize": "20px",
+      "renderedLineHeight": "27px",
+      "assumedLineHeight": 27
+    },
+    "lineHeight30:caret": {
+      "w": 96,
+      "h": 52,
+      "dx": -0.01,
+      "dy": 0.2,
+      "textShiftY": 0,
+      "lineHeightPx": 30,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "30px",
+      "assumedLineHeight": 30
+    },
+    "lineHeight30:below": {
+      "w": 96,
+      "h": 112,
+      "dx": -0.04,
+      "dy": 0.2,
+      "textShiftY": 0,
+      "lineHeightPx": 30,
+      "editorX": 53,
+      "renderedFontSize": "14px",
+      "renderedLineHeight": "30px",
+      "assumedLineHeight": 30
+    },
+    "editorFontZoomIn x2:caret": {
+      "w": 96,
+      "h": 52,
+      "dx": 0.38,
+      "dy": 1,
+      "textShiftY": 0,
+      "lineHeightPx": 22,
+      "editorX": 53,
+      "renderedFontSize": "16.8px",
+      "renderedLineHeight": "22px",
+      "assumedLineHeight": 19
+    },
+    "editorFontZoomIn x2:below": {
+      "w": 96,
+      "h": 109,
+      "dx": 0.36,
+      "dy": 10.67,
+      "textShiftY": 0,
+      "lineHeightPx": 22,
+      "editorX": 53,
+      "renderedFontSize": "16.8px",
+      "renderedLineHeight": "22px",
+      "assumedLineHeight": 19
+    }
+  },
+  "webview": {
+    "postMessageRoundTripMs": {
+      "n": 30,
+      "min": 0,
+      "p50": 1,
+      "p95": 3,
+      "max": 3
+    },
+    "canOverlayTextEditor": false,
+    "reason": "WebviewPanel is placed only by ViewColumn (it becomes an editor tab/group). WebviewView lives in the sidebar or panel. No API positions a webview over, or transparently on top of, a text editor, and no API gives cursor pixel coordinates to map into one."
+  },
+  "performance": [
+    {
+      "label": "effects OFF @15cps",
+      "charsTyped": 180,
+      "typingRateCps": 15.2,
+      "fps": 141.9,
+      "frameGapMs": {
+        "n": 1730,
+        "min": 3.3,
+        "p50": 6.9,
+        "p95": 7.2,
+        "max": 27.7
+      },
+      "framesOver50ms": 0,
+      "keystrokeToCaretMovedMs": {
+        "n": 18,
+        "min": 6.87,
+        "p50": 10.29,
+        "p95": 112.69,
+        "max": 112.69
+      },
+      "renderer": {
+        "layoutCount": 411,
+        "recalcStyleCount": 740,
+        "layoutSeconds": 0.109,
+        "recalcStyleSeconds": 0.152,
+        "scriptSeconds": 1.178,
+        "taskSeconds": 3.109,
+        "jsHeapDeltaMB": 2.24,
+        "domNodesDelta": 801
+      },
+      "extensionHostBurstMs": {
+        "n": 0
+      }
+    },
+    {
+      "label": "effects ON  @15cps (default burst)",
+      "charsTyped": 180,
+      "typingRateCps": 15.2,
+      "fps": 122.1,
+      "frameGapMs": {
+        "n": 1491,
+        "min": 4.5,
+        "p50": 7,
+        "p95": 14,
+        "max": 41.5
+      },
+      "framesOver50ms": 0,
+      "keystrokeToCaretMovedMs": {
+        "n": 18,
+        "min": 12.96,
+        "p50": 20.86,
+        "p95": 275.31,
+        "max": 275.31
+      },
+      "renderer": {
+        "layoutCount": 1005,
+        "recalcStyleCount": 1573,
+        "layoutSeconds": 0.259,
+        "recalcStyleSeconds": 1.329,
+        "scriptSeconds": 1.915,
+        "taskSeconds": 9.253,
+        "jsHeapDeltaMB": 2.79,
+        "domNodesDelta": 30436
+      },
+      "extensionHostBurstMs": {
+        "n": 180,
+        "min": 0.19,
+        "p50": 0.34,
+        "p95": 0.74,
+        "max": 2.12
+      }
+    },
+    {
+      "label": "effects ON  @30cps stress (60 particles, high quality)",
+      "charsTyped": 240,
+      "typingRateCps": 30.3,
+      "fps": 51.2,
+      "frameGapMs": {
+        "n": 937,
+        "min": 6.6,
+        "p50": 20.7,
+        "p95": 34.9,
+        "max": 118
+      },
+      "framesOver50ms": 28,
+      "keystrokeToCaretMovedMs": {
+        "n": 24,
+        "min": 205.02,
+        "p50": 572.6,
+        "p95": 865.31,
+        "max": 865.67
+      },
+      "renderer": {
+        "layoutCount": 930,
+        "recalcStyleCount": 1351,
+        "layoutSeconds": 0.267,
+        "recalcStyleSeconds": 1.742,
+        "scriptSeconds": 2.086,
+        "taskSeconds": 17.058,
+        "jsHeapDeltaMB": 2.64,
+        "domNodesDelta": 30397
+      },
+      "extensionHostBurstMs": {
+        "n": 240,
+        "min": 0.62,
+        "p50": 1.1,
+        "p95": 2.43,
+        "max": 3.78
+      }
+    }
+  ],
+  "finishedAt": "2026-11-19T11:38:31.216Z"
+}

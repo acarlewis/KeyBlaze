@@ -1,0 +1,91 @@
+{
+  "startedAt": "2026-11-19T11:49:26.355Z",
+  "steps": [
+    {
+      "label": "baseline idle",
+      "idleRendererBusyPct": 9.4,
+      "idleFps": 140,
+      "jsHeapMB": 87,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1494,
+      "images": 0
+    },
+    {
+      "label": "effects ON 25cps x200 — short lines (Enter every 50)",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 24.9
+    },
+    {
+      "label": "idle after: short lines (Enter every 50)",
+      "idleRendererBusyPct": 11.4,
+      "idleFps": 145,
+      "jsHeapMB": 72.8,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1499,
+      "images": 0
+    },
+    {
+      "label": "effects ON 25cps x200 — one long line (no Enter, 200 chars)",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 25
+    },
+    {
+      "label": "idle after: one long line (no Enter, 200 chars)",
+      "idleRendererBusyPct": 12.2,
+      "idleFps": 145,
+      "jsHeapMB": 89,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1503,
+      "images": 0
+    },
+    {
+      "label": "effects ON 25cps x200 — second long line",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 25
+    },
+    {
+      "label": "idle after: second long line",
+      "idleRendererBusyPct": 14.4,
+      "idleFps": 145,
+      "jsHeapMB": 85.7,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1507,
+      "images": 0
+    },
+    {
+      "label": "effects ON 25cps x200 — back to short lines",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 24.9
+    },
+    {
+      "label": "idle after: back to short lines",
+      "idleRendererBusyPct": 13.1,
+      "idleFps": 145,
+      "jsHeapMB": 96.3,
+      "cssRules": 12572,
+      "cssRulesWithSvg": 10,
+      "nodes": 1511,
+      "images": 0
+    },
+    {
+      "label": "effects OFF 25cps x200 — one long line",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 17.4
+    },
+    {
+      "label": "effects ON 25cps x200 — long line, size 96 bursts",
+      "typed": 200,
+      "targetCps": 25,
+      "achievedCps": 6.3
+    }
+  ]
+}
