@@ -1,0 +1,74 @@
+# Publishes KeyBlaze to the Visual Studio Code Marketplace with Trusted Publishing (OpenID Connect).
+#
+# - No Personal Access Token: GitHub issues a short-lived OIDC token that vsce exchanges for a
+#   Marketplace credential (valid 15 minutes, single use). Nothing secret is stored in the repository.
+# - Runs only when started by hand (Actions → "Publish to VS Code Marketplace" → Run workflow), with the
+#   version typed in as a confirmation. The full CI must pass first.
+# - The publish job uses the GitHub environment "marketplace". Protect it with required reviewers so
+#   a person approves every release. The Marketplace Trusted Publishing policy must name the same
+#   repository, this workflow file (publish.yml) and this environment. See RELEASING.md.
+name: Publish to VS Code Marketplace
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish. Must equal "version" in package.json (for example 0.1.0).'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-publish
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish ${{ inputs.version }}
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read
+      id-token: write # required to request the OIDC token for Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Confirm the version
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          ACTUAL=$(node -p "require('./package.json').version")
+          if [ "$REQUESTED" != "$ACTUAL" ]; then
+            echo "::error::Requested version $REQUESTED does not match package.json version $ACTUAL"
+            exit 1
+          fi
+          echo "Publishing $(node -p "require('./package.json').publisher").$(node -p "require('./package.json').name") $ACTUAL"
+
+      - run: npm run build:prod
+      - name: Verify packaged files (allowlist)
+        run: node scripts/check-package-files.mjs
+      - name: Package
+        run: npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keyblaze-${{ inputs.version }}-vsix
+          path: keyblaze-${{ inputs.version }}.vsix
+          if-no-files-found: error
+
+      - name: Publish with Trusted Publishing (OIDC)
+        # Publishes exactly the VSIX that was built and verified above. --packagePath performs no git
+        # operations (no version commit or tag).
+        run: npx vsce publish --oidc --packagePath "keyblaze-${{ inputs.version }}.vsix"
