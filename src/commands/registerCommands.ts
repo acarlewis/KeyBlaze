@@ -4,6 +4,7 @@ import { PRESETS } from '../config/presets';
 import type { EffectId, PresetId } from '../config/schema';
 import { EFFECT_IDS, PRESET_IDS } from '../config/schema';
 import type { ControlPanelProvider } from '../providers/ControlPanelProvider';
+import type { SoundViewProvider } from '../providers/SoundViewProvider';
 import type { DecorationSlotPool } from '../services/DecorationRenderer';
 import type { EffectsController } from '../services/EffectsController';
 import type { SettingsService } from '../services/SettingsService';
@@ -25,12 +26,13 @@ export const COMMAND_IDS = {
 } as const;
 
 export interface CommandDeps {
-  readonly context: vscode.ExtensionContext;
+  readonly context: Pick<vscode.ExtensionContext, 'extensionUri' | 'extension'>;
   readonly settings: SettingsService;
   readonly effects: EffectsController;
   readonly pool: DecorationSlotPool;
   readonly logger: Logger;
   readonly controlPanel: ControlPanelProvider;
+  readonly soundView?: SoundViewProvider;
 }
 
 export interface ResetOptions {
@@ -78,7 +80,17 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
     register(COMMAND_IDS.openControlPanel, () => deps.controlPanel.show()),
     register(COMMAND_IDS.openSoundView, async () => {
       if (!settings.get()['sound.enabled']) await settings.update('sound.enabled', true);
-      await vscode.commands.executeCommand('keyblaze.sound.focus');
+      await deps.soundView?.syncContext();
+      // The view's `when` clause (sound enabled) is re-evaluated asynchronously; on some VS Code
+      // versions the first focus lands before the view exists. Retry until it has been resolved.
+      for (let attempt = 0; attempt < 20; attempt++) {
+        await vscode.commands.executeCommand('keyblaze.sound.focus');
+        // `visible`, not just resolved: a view that is about to be disposed (sound was just turned
+        // off) can still look resolved for a moment.
+        if (deps.soundView?.stats.visible) return;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      logger.warn('KeyBlaze Sound view did not open');
     }),
 
     register(COMMAND_IDS.nextEffect, () => setEffect(cycle(EFFECT_IDS, settings.get().effect, 1))),
