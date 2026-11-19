@@ -1,16 +1,26 @@
 # Continuous integration for KeyBlaze.
-# Not yet executed on GitHub (the project has no remote); every step has been run locally on Windows.
+# Runs on pushes to main, on pull requests, on demand, and as the gate of the publish workflow.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   check:
-    name: Typecheck, lint, format, unit tests, coverage
-    runs-on: ubuntu-latest
+    name: Checks and unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux and macOS have case-sensitive file systems; Windows is the development platform.
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,6 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # stable = current VS Code; minimum = 1.90.0 (package.json engines)
         label: [stable, minimum]
     runs-on: ${{ matrix.os }}
     steps:
@@ -43,3 +54,24 @@ jobs:
       - name: Integration tests
         if: runner.os != 'Linux'
         run: npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
+
+  package:
+    name: Package VSIX
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:prod
+      - name: Verify packaged files (allowlist)
+        run: node scripts/check-package-files.mjs
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: '*.vsix'
+          if-no-files-found: error

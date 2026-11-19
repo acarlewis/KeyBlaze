@@ -98,16 +98,13 @@ npm run package      # → keyblaze-<version>.vsix (runs the production build fi
 Install the result with **Extensions → … → Install from VSIX…** or
 `code --install-extension keyblaze-<version>.vsix`.
 
-Before publishing to the Visual Studio Code Marketplace:
+`node scripts/check-package-files.mjs` (after `npm run build:prod`) verifies that the package contains
+only the allowlisted production files. CI runs it on every change.
 
-1. Create a publisher (see the [publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension))
-   and replace the placeholder `"publisher": "your-publisher-id"` in `package.json`. Also update the
-   extension ID used by the tests (`test/suite/helpers.ts` reads it from `package.json`) and the
-   visual scripts (`your-publisher-id.keyblaze`).
-2. Add a `repository` field (and optionally `homepage` and `bugs`) to `package.json`. Then remove
-   `--allow-missing-repository --no-rewrite-relative-links` from the `package` script, so that `vsce`
-   rewrites the README's relative image links to absolute URLs in your repository. Until then, the
-   README images render on GitHub but not in VS Code's extension details view. The image files are
-   deliberately not packaged.
-3. Bump `version`, update `CHANGELOG.md`, and remove `"preview": true` when it's ready for a stable release.
-4. `npx vsce login <publisher>` and `npx vsce publish`.
+The publisher (`CLdForge`) and the repository are configured in `package.json`. Every test and script
+derives the extension ID from it (`spike/lib.mjs` exports `EXTENSION_ID`). `vsce` rewrites the README's
+relative image links to absolute GitHub URLs, so the image files are deliberately not packaged.
+
+Releases are published by GitHub Actions with Marketplace **Trusted Publishing** (OIDC, no Personal
+Access Token). See [RELEASING.md](RELEASING.md) for the one-time setup and the release checklist. Don't
+publish from a local machine.

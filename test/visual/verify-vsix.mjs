@@ -4,9 +4,9 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, RESULTS, key, launch, measure, poc, sleep } from '../../spike/lib.mjs';
+import { ROOT, RESULTS, key, launch, measure, poc, sleep, EXTENSION_ID } from '../../spike/lib.mjs';
 
-const ID = 'your-publisher-id.keyblaze';
+const ID = EXTENSION_ID;
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const vsix = path.join(ROOT, `${pkg.name}-${pkg.version}.vsix`);
 const version = process.env.KEYBLAZE_VSCODE_VERSION ?? '1.147.0';
@@ -91,7 +91,7 @@ try {
   // vsce normalises names: readme.md, changelog.md, LICENSE.txt.
   const readme = path.join(
     extDir,
-    fs.readdirSync(extDir).find((d) => d.startsWith(ID)) ?? '',
+    fs.readdirSync(extDir).find((d) => d.toLowerCase().startsWith(ID.toLowerCase())) ?? '',
     'readme.md',
   );
   const installed = fs.readdirSync(path.dirname(readme)).map((f) => f.toLowerCase());

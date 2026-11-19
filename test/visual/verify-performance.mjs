@@ -4,9 +4,19 @@
 // Usage: npm run build && node test/visual/verify-performance.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, RESULTS, evaluate, key, launch, metrics, poc, sleep } from '../../spike/lib.mjs';
+import {
+  ROOT,
+  RESULTS,
+  evaluate,
+  key,
+  launch,
+  metrics,
+  poc,
+  sleep,
+  EXTENSION_ID,
+} from '../../spike/lib.mjs';
 
-const ID = 'your-publisher-id.keyblaze';
+const ID = EXTENSION_ID;
 const stats = (xs) => {
   const s = [...xs].sort((a, b) => a - b);
   const q = (p) => s[Math.min(s.length - 1, Math.floor(p * s.length))];

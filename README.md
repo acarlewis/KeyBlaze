@@ -1,6 +1,6 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="media/logo/Light_Background_application.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/acarlewis/KeyBlaze/raw/HEAD/media/logo/Light_Background_application.png">
     <img src="media/logo/Full_Logo.png" alt="KeyBlaze" width="520">
   </picture>
 </h1>
