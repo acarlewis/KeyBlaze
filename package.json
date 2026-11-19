@@ -1,0 +1,463 @@
+{
+  "name": "keyblaze",
+  "displayName": "KeyBlaze",
+  "description": "Make Every Keystroke Count. Particle bursts, fire, lightning, combos and more — rendered with supported VS Code APIs.",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Themes"
+  ],
+  "keywords": [
+    "power mode",
+    "particles",
+    "typing effects",
+    "combo",
+    "fun"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "keyblaze.enable",
+        "title": "Enable",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.disable",
+        "title": "Disable",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.toggle",
+        "title": "Toggle",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.changeEffect",
+        "title": "Change Effect",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.nextEffect",
+        "title": "Next Effect",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.previousEffect",
+        "title": "Previous Effect",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.applyPreset",
+        "title": "Apply Preset",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.previewEffect",
+        "title": "Preview Effect",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.resetSettings",
+        "title": "Reset Settings",
+        "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.dev.renderingSpike",
+        "title": "Run Rendering Spike (Developer)",
+        "category": "KeyBlaze"
+      }
+    ],
+    "configuration": {
+      "title": "KeyBlaze",
+      "properties": {
+        "keyblaze.enabled": {
+          "type": "boolean",
+          "default": true,
+          "order": 0,
+          "description": "Enable KeyBlaze typing effects."
+        },
+        "keyblaze.preset": {
+          "type": "string",
+          "default": "classicBurst",
+          "order": 1,
+          "enum": [
+            "classicBurst",
+            "firestorm",
+            "lightningStrike",
+            "neonEnergy",
+            "cosmicExplosion",
+            "starfall",
+            "minimalSparks",
+            "rainbowRush",
+            "cyberpunk",
+            "cleanMode",
+            "custom"
+          ],
+          "enumItemLabels": [
+            "Classic Burst",
+            "Firestorm",
+            "Lightning Strike",
+            "Neon Energy",
+            "Cosmic Explosion",
+            "Starfall",
+            "Minimal Sparks",
+            "Rainbow Rush",
+            "Cyberpunk",
+            "Clean Mode",
+            "Custom"
+          ],
+          "markdownDescription": "Animation preset. A preset supplies the effect, colours, shape and particle values. Any of those settings that you set explicitly **override** the preset. `custom` uses only your own settings and the built-in defaults."
+        },
+        "keyblaze.effect": {
+          "type": "string",
+          "default": "particles",
+          "order": 2,
+          "enum": [
+            "particles",
+            "fire",
+            "lightning",
+            "energy",
+            "fireworks",
+            "stars",
+            "minimal"
+          ],
+          "enumDescriptions": [
+            "Particle explosion bursting from the cursor.",
+            "Rising, flickering flames and embers.",
+            "Electric arcs and sparks.",
+            "Expanding glowing energy rings.",
+            "Multi-stage firework explosions.",
+            "Twinkling stars and glowing motes.",
+            "Small, subtle sparks with minimal distraction."
+          ],
+          "markdownDescription": "Typing effect. Overrides the active `#keyblaze.preset#` when set."
+        },
+        "keyblaze.intensity": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "order": 3,
+          "markdownDescription": "Overall effect intensity (1–10). Scales spread, glow and energy. Overrides the preset when set."
+        },
+        "keyblaze.particleCount": {
+          "type": "integer",
+          "default": 14,
+          "minimum": 1,
+          "maximum": 100,
+          "order": 4,
+          "markdownDescription": "Particles spawned per keystroke, before performance limits. Overrides the preset when set."
+        },
+        "keyblaze.particleSize": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 12,
+          "order": 5,
+          "markdownDescription": "Base particle size in pixels. Overrides the preset when set."
+        },
+        "keyblaze.particleSpeed": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.25,
+          "maximum": 3,
+          "order": 6,
+          "markdownDescription": "Particle speed multiplier. Overrides the preset when set."
+        },
+        "keyblaze.particleLifetime": {
+          "type": "integer",
+          "default": 650,
+          "minimum": 150,
+          "maximum": 3000,
+          "order": 7,
+          "markdownDescription": "How long a burst lives, in milliseconds. Overrides the preset when set."
+        },
+        "keyblaze.particleShape": {
+          "type": "string",
+          "default": "auto",
+          "order": 8,
+          "enum": [
+            "auto",
+            "circle",
+            "square",
+            "triangle",
+            "star",
+            "spark"
+          ],
+          "enumDescriptions": [
+            "Use the effect's natural shapes.",
+            "Round particles.",
+            "Square, pixel-like particles.",
+            "Triangular shards.",
+            "Small star shapes.",
+            "Thin streaks."
+          ],
+          "markdownDescription": "Particle shape. Overrides the preset when set."
+        },
+        "keyblaze.colors": {
+          "type": "array",
+          "default": [
+            "#ff8a00",
+            "#ffd23f",
+            "#ff5e3a",
+            "#fff3b0"
+          ],
+          "order": 9,
+          "items": {
+            "type": "string",
+            "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+            "patternErrorMessage": "Use a hex colour such as #ff8a00."
+          },
+          "maxItems": 12,
+          "markdownDescription": "Particle colour palette (hex colours). Overrides the preset when set."
+        },
+        "keyblaze.triggerOnDelete": {
+          "type": "boolean",
+          "default": true,
+          "order": 10,
+          "description": "Also trigger effects for Backspace and Delete."
+        },
+        "keyblaze.cursor.effect": {
+          "type": "string",
+          "default": "none",
+          "order": 20,
+          "enum": [
+            "none",
+            "glow",
+            "sparks",
+            "ring",
+            "trail"
+          ],
+          "markdownDescription": "Extra effect around the typing cursor. Overrides the preset when set."
+        },
+        "keyblaze.combo.enabled": {
+          "type": "boolean",
+          "default": true,
+          "order": 30,
+          "description": "Track typing combos and streaks."
+        },
+        "keyblaze.combo.resetTime": {
+          "type": "integer",
+          "default": 3000,
+          "minimum": 500,
+          "maximum": 60000,
+          "order": 31,
+          "description": "Milliseconds of inactivity before the combo resets."
+        },
+        "keyblaze.combo.showIndicator": {
+          "type": "boolean",
+          "default": true,
+          "order": 32,
+          "description": "Show the animated combo indicator at the end of the cursor line."
+        },
+        "keyblaze.combo.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "order": 33,
+          "description": "Show the current combo in the status bar."
+        },
+        "keyblaze.combo.milestones": {
+          "type": "array",
+          "default": [
+            10,
+            25,
+            50,
+            100
+          ],
+          "order": 34,
+          "items": {
+            "type": "integer",
+            "minimum": 2
+          },
+          "maxItems": 20,
+          "description": "Combo counts that trigger a milestone celebration."
+        },
+        "keyblaze.screenShake.enabled": {
+          "type": "boolean",
+          "default": false,
+          "order": 40,
+          "markdownDescription": "Enable **Impact Pulse** on combo milestones. The effect layer and combo badge shake, and the cursor line can flash. The editor text never moves, because moving it reliably would need unsupported hacks."
+        },
+        "keyblaze.screenShake.intensity": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "order": 41,
+          "description": "Impact Pulse strength (1–10). Larger milestones shake harder."
+        },
+        "keyblaze.screenShake.duration": {
+          "type": "integer",
+          "default": 250,
+          "minimum": 50,
+          "maximum": 1000,
+          "order": 42,
+          "description": "Impact Pulse duration in milliseconds."
+        },
+        "keyblaze.screenShake.flashLine": {
+          "type": "boolean",
+          "default": true,
+          "order": 43,
+          "description": "Briefly flash the cursor line during an Impact Pulse."
+        },
+        "keyblaze.sound.enabled": {
+          "type": "boolean",
+          "default": false,
+          "order": 50,
+          "markdownDescription": "Enable synthesised sound effects. They play through the KeyBlaze Sound view, which must be opened and clicked once because of the browser autoplay policy."
+        },
+        "keyblaze.sound.volume": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0,
+          "maximum": 1,
+          "order": 51,
+          "description": "Sound volume (0–1)."
+        },
+        "keyblaze.sound.theme": {
+          "type": "string",
+          "default": "soft",
+          "order": 52,
+          "enum": [
+            "soft",
+            "mechanical",
+            "arcade",
+            "chime"
+          ],
+          "description": "Sound theme."
+        },
+        "keyblaze.sound.mode": {
+          "type": "string",
+          "default": "milestones",
+          "order": 53,
+          "enum": [
+            "milestones",
+            "everyKeystroke"
+          ],
+          "enumDescriptions": [
+            "Play sounds only on combo milestones.",
+            "Play a subtle sound on every keystroke."
+          ],
+          "description": "When to play sounds."
+        },
+        "keyblaze.performanceMode": {
+          "type": "boolean",
+          "default": false,
+          "order": 60,
+          "description": "Low-spec mode: fewer particles, simpler animation and stricter limits."
+        },
+        "keyblaze.performance.maxConcurrentBursts": {
+          "type": "integer",
+          "default": 16,
+          "minimum": 1,
+          "maximum": 48,
+          "order": 61,
+          "description": "Maximum number of bursts on screen at once. The oldest burst is recycled first."
+        },
+        "keyblaze.performance.maxBurstsPerSecond": {
+          "type": "integer",
+          "default": 24,
+          "minimum": 1,
+          "maximum": 60,
+          "order": 62,
+          "description": "Maximum bursts started per second. Extra keystrokes still count towards combos."
+        },
+        "keyblaze.performance.frameRateLimit": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 15,
+          "maximum": 144,
+          "order": 63,
+          "description": "Frame-rate cap for the Control Panel preview. Animation in the editor is driven by the editor's renderer."
+        },
+        "keyblaze.performance.quality": {
+          "type": "string",
+          "default": "high",
+          "order": 64,
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "description": "Animation quality: more keyframes and glow at higher levels."
+        },
+        "keyblaze.accessibility.respectReducedMotion": {
+          "type": "boolean",
+          "default": true,
+          "order": 70,
+          "markdownDescription": "Reduce or disable motion when `#workbench.reduceMotion#` is on, or is `auto` and the OS requests reduced motion."
+        },
+        "keyblaze.accessibility.disableWithScreenReader": {
+          "type": "boolean",
+          "default": true,
+          "order": 71,
+          "markdownDescription": "Disable effects when screen-reader optimisation (`#editor.accessibilitySupport#`) is on."
+        },
+        "keyblaze.excludeLanguages": {
+          "type": "array",
+          "default": [],
+          "order": 80,
+          "items": {
+            "type": "string"
+          },
+          "description": "Language IDs where KeyBlaze is disabled, for example \"markdown\" or \"plaintext\"."
+        },
+        "keyblaze.excludeFiles": {
+          "type": "array",
+          "default": [],
+          "order": 81,
+          "items": {
+            "type": "string"
+          },
+          "description": "Glob patterns for files where KeyBlaze is disabled, for example \"**/*.min.js\"."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:prod",
+    "build": "node esbuild.mjs",
+    "build:prod": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "compile-tests": "tsc -p tsconfig.test.json",
+    "lint": "eslint src test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:unit": "npm run compile-tests && mocha --ui tdd \"out/test/unit/**/*.test.js\"",
+    "test:integration": "npm run build && npm run compile-tests && vscode-test",
+    "test": "npm run test:unit && npm run test:integration",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.43",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "mocha": "^12.0.3",
+    "prettier": "^3.10.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.73.0"
+  }
+}
