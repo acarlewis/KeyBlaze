@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22202b"/>
+      <stop offset="1" stop-color="#0f0e14"/>
+    </linearGradient>
+    <radialGradient id="burst" cx="0.5" cy="0.56" r="0.5">
+      <stop offset="0" stop-color="#ffb000" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#ff5a00" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff5a00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a3846"/>
+      <stop offset="1" stop-color="#26242f"/>
+    </linearGradient>
+    <linearGradient id="capTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4758"/>
+      <stop offset="1" stop-color="#34323f"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff3d00"/>
+      <stop offset="0.5" stop-color="#ff8a00"/>
+      <stop offset="1" stop-color="#ffd23f"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#fff6c8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+
+  <!-- Energy burst: glow and rays -->
+  <circle cx="128" cy="142" r="118" fill="url(#burst)"/>
+  <g stroke="#ffb000" stroke-linecap="round" stroke-width="9" opacity="0.9">
+    <line x1="128" y1="30" x2="128" y2="50"/>
+    <line x1="58" y1="58" x2="72" y2="72"/>
+    <line x1="198" y1="58" x2="184" y2="72"/>
+    <line x1="30" y1="132" x2="48" y2="132"/>
+    <line x1="226" y1="132" x2="208" y2="132"/>
+  </g>
+  <g fill="#ffd23f">
+    <circle cx="92" cy="40" r="5"/>
+    <circle cx="168" cy="38" r="4"/>
+    <circle cx="40" cy="96" r="4"/>
+    <circle cx="218" cy="92" r="5"/>
+  </g>
+
+  <!-- Keycap -->
+  <rect x="52" y="92" width="152" height="128" rx="26" fill="url(#cap)" stroke="#ff8a00" stroke-width="7"/>
+  <rect x="66" y="100" width="124" height="98" rx="18" fill="url(#capTop)"/>
+
+  <!-- Flame on the keycap (scaled up for legibility at small sizes) -->
+  <g transform="translate(128 152) scale(1.15) translate(-128 -152)">
+  <path d="M128 106c6 18 30 30 30 58a30 30 0 0 1-60 0c0-14 7-23 13-30 2 9 7 14 12 15-6-17-2-31 5-43z" fill="url(#flame)"/>
+  <path d="M128 140c4 10 15 16 15 30a15 15 0 0 1-30 0c0-9 6-14 9-18 1 5 4 8 7 9-2-8-2-14-1-21z" fill="url(#core)"/>
+  </g>
+</svg>

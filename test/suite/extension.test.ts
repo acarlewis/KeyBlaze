@@ -567,6 +567,16 @@ suite('Control Panel', () => {
     await waitFor(() => api.getStats().controlPanel.statesPosted > before, 3000, 'state push');
   });
 
+  test('Documentation opens the README in a Markdown preview', async () => {
+    const api = await getApi();
+    assert.ok(await api.sendControlPanelMessage({ type: 'command', command: 'openDocs' }));
+    await waitFor(
+      () => vscode.window.tabGroups.all.flatMap((g) => g.tabs).some((t) => /readme/i.test(t.label)),
+      5000,
+      'README preview tab',
+    );
+  });
+
   test('closing the panel disposes it', async () => {
     const api = await getApi();
     await vscode.commands.executeCommand('keyblaze.openControlPanel');

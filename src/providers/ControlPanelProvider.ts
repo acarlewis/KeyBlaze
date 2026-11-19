@@ -191,8 +191,22 @@ export class ControlPanelProvider implements vscode.Disposable {
         await vscode.commands.executeCommand('keyblaze.openSoundView');
         break;
       case 'openDocs': {
-        const readme = vscode.Uri.joinPath(this.context.extensionUri, 'README.md');
-        await vscode.commands.executeCommand('markdown.showPreview', readme);
+        // vsce packages the README as `readme.md`; the source tree has `README.md`. Case matters on Linux.
+        for (const name of ['readme.md', 'README.md']) {
+          const readme = vscode.Uri.joinPath(this.context.extensionUri, name);
+          try {
+            await vscode.workspace.fs.stat(readme);
+            await vscode.commands.executeCommand('markdown.showPreview', readme);
+            return true;
+          } catch {
+            // try the next name
+          }
+        }
+        this.post({
+          type: 'notice',
+          level: 'error',
+          text: 'README not found in the extension folder.',
+        });
         break;
       }
     }

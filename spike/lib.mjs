@@ -16,7 +16,7 @@ const POC_PORT = 9555;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function launch({ settings = {}, width = 1400, height = 900, extraExtensions = [] } = {}) {
+export async function launch({ settings = {}, width = 1400, height = 900, extraExtensions = [], extensionsDir, keepInstalledExtensions = false } = {}) {
   const userData = path.join(RESULTS, 'user-data');
   fs.rmSync(userData, { recursive: true, force: true });
   fs.mkdirSync(path.join(userData, 'User'), { recursive: true });
@@ -52,8 +52,8 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
       `--extensionDevelopmentPath=${path.join(here, 'poc')}`,
       ...extraExtensions.map((p) => `--extensionDevelopmentPath=${p}`),
       `--user-data-dir=${userData}`,
-      `--extensions-dir=${path.join(RESULTS, 'extensions')}`,
-      '--disable-extensions',
+      `--extensions-dir=${extensionsDir ?? path.join(RESULTS, 'extensions')}`,
+      ...(keepInstalledExtensions ? [] : ['--disable-extensions']),
       `--remote-debugging-port=${CDP_PORT}`,
       '--skip-welcome',
       '--skip-release-notes',
@@ -86,7 +86,7 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
   await cdp.send('Performance.enable');
   await sleep(1500);
   // A spawned test window may not have OS focus; KeyBlaze pauses when unfocused, so pin it.
-  if (extraExtensions.length > 0) {
+  if (extraExtensions.length > 0 || keepInstalledExtensions) {
     try {
       await poc('keyblazeEnv', { id: 'your-publisher-id.keyblaze', override: { windowFocused: true } });
     } catch {
