@@ -1,16 +1,20 @@
 import * as vscode from 'vscode';
 import { registerCommands } from './commands/registerCommands';
 import type { KeyBlazeSettings } from './config/schema';
+import type { Environment, MotionPolicy } from './core/motion';
 import { ControlPanelProvider } from './providers/ControlPanelProvider';
+import { SOUND_VIEW_ID, SoundViewProvider } from './providers/SoundViewProvider';
 import { ComboIndicator } from './services/ComboIndicator';
 import { ComboService } from './services/ComboService';
 import { CursorEffects } from './services/CursorEffects';
 import { DecorationSlotPool } from './services/DecorationRenderer';
 import type { LastBurstInfo } from './services/EffectsController';
 import { EffectsController } from './services/EffectsController';
+import { EnvironmentService } from './services/EnvironmentService';
 import { ImpactPulse } from './services/ImpactPulse';
 import { InlayHintTracker } from './services/InlayHintTracker';
 import { SettingsService } from './services/SettingsService';
+import { SoundService } from './services/SoundService';
 import { StatusBarService } from './services/StatusBarService';
 import type { KeystrokeEvent } from './services/TypingDetector';
 import { TypingDetector } from './services/TypingDetector';
@@ -35,7 +39,11 @@ export interface KeyBlazeApi {
     celebrations: number;
     cursorEffects: { auraVisible: boolean; oneShots: number };
     controlPanel: ControlPanelProvider['stats'];
+    policy: MotionPolicy;
+    sound: SoundViewProvider['stats'];
   };
+  /** Test hook: pin parts of the environment (window focus, reduce motion, screen reader). */
+  setEnvironmentOverride(override: Partial<Environment>): void;
   /** Test hook: feed a raw message to the Control Panel host handler. */
   sendControlPanelMessage(message: unknown): Promise<boolean>;
 }
@@ -43,20 +51,26 @@ export interface KeyBlazeApi {
 export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
   const logger = new Logger();
   const settings = new SettingsService();
+  const env = new EnvironmentService(settings, context.globalState);
   const pool = new DecorationSlotPool(settings.get()['performance.maxConcurrentBursts'], logger);
   const detector = new TypingDetector(settings);
-  const inlayHints = new InlayHintTracker();
-  const effects = new EffectsController(settings, detector, pool, logger, inlayHints);
-  const combo = new ComboService(settings, detector, context.globalState);
-  const comboIndicator = new ComboIndicator(settings, combo, logger);
-  const impact = new ImpactPulse(settings, combo, effects, logger);
-  const cursorEffects = new CursorEffects(settings, detector, inlayHints, logger);
-  const statusBar = new StatusBarService(settings, combo);
-  const controlPanel = new ControlPanelProvider(context, settings, combo, logger);
+  const inlayHints = new InlayHintTracker(
+    () => env.policy.active && settings.get().placement === 'auto',
+  );
+  const effects = new EffectsController(settings, detector, pool, logger, inlayHints, env);
+  const combo = new ComboService(settings, detector, context.globalState, env);
+  const comboIndicator = new ComboIndicator(settings, combo, logger, env);
+  const impact = new ImpactPulse(settings, combo, effects, logger, env);
+  const cursorEffects = new CursorEffects(settings, detector, inlayHints, logger, env);
+  const statusBar = new StatusBarService(settings, combo, env);
+  const controlPanel = new ControlPanelProvider(context, settings, combo, logger, env);
+  const soundView = new SoundViewProvider(context, settings, env, logger);
+  const sound = new SoundService(settings, detector, combo, soundView);
 
   context.subscriptions.push(
     logger,
     settings,
+    env,
     pool,
     detector,
     inlayHints,
@@ -67,6 +81,11 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
     cursorEffects,
     statusBar,
     controlPanel,
+    soundView,
+    sound,
+    vscode.window.registerWebviewViewProvider(SOUND_VIEW_ID, soundView, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     ...registerCommands({ context, settings, effects, pool, logger, controlPanel }),
   );
 
@@ -87,7 +106,10 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
       celebrations: impact.celebrationCount,
       cursorEffects: cursorEffects.stats,
       controlPanel: controlPanel.stats,
+      policy: env.policy,
+      sound: soundView.stats,
     }),
+    setEnvironmentOverride: (override) => env.setTestOverride(override),
     sendControlPanelMessage: (message) => controlPanel.onMessage(message),
   };
 }

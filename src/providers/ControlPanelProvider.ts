@@ -4,7 +4,9 @@ import type { HostMessage, PanelState, WebviewMessage } from '../config/messages
 import { parseWebviewMessage } from '../config/messages';
 import { PRESETS } from '../config/presets';
 import { EFFECT_IDS, PRESET_IDS, validateSetting } from '../config/schema';
+import { describeInactive } from '../core/motion';
 import type { ComboService } from '../services/ComboService';
+import type { EnvironmentService } from '../services/EnvironmentService';
 import type { SettingsService } from '../services/SettingsService';
 import type { Logger } from '../utils/logger';
 
@@ -32,8 +34,10 @@ export class ControlPanelProvider implements vscode.Disposable {
     private readonly settings: SettingsService,
     private readonly combo: ComboService,
     private readonly logger: Logger,
+    private readonly env?: EnvironmentService,
   ) {
     this.disposables.push(settings.onDidChange(() => this.postState()));
+    if (env) this.disposables.push(env.onDidChange(() => this.postState()));
   }
 
   /** Diagnostics for tests. */
@@ -147,11 +151,14 @@ export class ControlPanelProvider implements vscode.Disposable {
       case 'error':
         this.logger.error(`Control Panel webview: ${message.message}`);
         return true;
+      case 'environment':
+        this.env?.setOsPrefersReducedMotion(message.prefersReducedMotion);
+        return true;
     }
   }
 
   private async runCommand(
-    command: 'toggle' | 'previewInEditor' | 'openSettings' | 'openDocs',
+    command: 'toggle' | 'previewInEditor' | 'openSettings' | 'openDocs' | 'openSoundView',
   ): Promise<boolean> {
     switch (command) {
       case 'toggle':
@@ -180,6 +187,9 @@ export class ControlPanelProvider implements vscode.Disposable {
           `@ext:${this.context.extension.id}`,
         );
         break;
+      case 'openSoundView':
+        await vscode.commands.executeCommand('keyblaze.openSoundView');
+        break;
       case 'openDocs': {
         const readme = vscode.Uri.joinPath(this.context.extensionUri, 'README.md');
         await vscode.commands.executeCommand('markdown.showPreview', readme);
@@ -191,6 +201,7 @@ export class ControlPanelProvider implements vscode.Disposable {
 
   private state(): PanelState {
     const pkg = this.context.extension.packageJSON as { version?: string };
+    const policy = this.env?.policy;
     return {
       settings: this.settings.get(),
       overridden: this.settings.overriddenPresetKeys(),
@@ -203,6 +214,14 @@ export class ControlPanelProvider implements vscode.Disposable {
       version: pkg.version ?? '0.0.0',
       vscodeVersion: vscode.version,
       bestCombo: this.combo.snapshot().best,
+      status: {
+        active: policy?.active ?? true,
+        ...(policy?.reason ? { reason: policy.reason } : {}),
+        description: describeInactive(policy?.active === false ? policy.reason : undefined),
+        reducedMotion: policy?.reducedMotion ?? false,
+        windowFocused: this.env?.environment.windowFocused ?? true,
+        soundAllowed: policy?.sound ?? false,
+      },
     };
   }
 

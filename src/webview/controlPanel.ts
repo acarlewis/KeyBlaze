@@ -13,6 +13,8 @@ import {
   PRESETABLE_KEYS,
   QUALITY_LEVELS,
   SETTING_SPECS,
+  SOUND_MODES,
+  SOUND_THEMES,
 } from '../config/schema';
 import { Preview } from './preview';
 
@@ -244,6 +246,43 @@ const SECTIONS: Record<Exclude<Tab, 'dashboard' | 'about'>, Section[]> = {
           step: 1,
           unit: 'fps',
           help: 'Applies to this preview; the editor animates with the renderer.',
+        },
+      ],
+    },
+    {
+      title: 'Accessibility',
+      description: 'KeyBlaze follows VS Code and OS accessibility preferences.',
+      controls: [
+        {
+          kind: 'toggle',
+          key: 'accessibility.respectReducedMotion',
+          label: 'Respect reduced motion',
+          help: 'With workbench.reduceMotion on (or auto + OS preference): tiny sparks, no Impact Pulse, no pulsing.',
+        },
+        {
+          kind: 'toggle',
+          key: 'accessibility.disableWithScreenReader',
+          label: 'Pause while a screen reader is in use',
+          help: 'When editor.accessibilitySupport is on: no effects, combos or sounds.',
+        },
+      ],
+    },
+    {
+      title: 'Sound',
+      description:
+        'Original synthesised sounds, played through the KeyBlaze Sound view in the Explorer.',
+      controls: [
+        { kind: 'toggle', key: 'sound.enabled', label: 'Enable sound' },
+        { kind: 'range', key: 'sound.volume', label: 'Volume', step: 0.05 },
+        { kind: 'select', key: 'sound.theme', label: 'Theme', options: options(SOUND_THEMES) },
+        {
+          kind: 'select',
+          key: 'sound.mode',
+          label: 'When to play',
+          options: options(SOUND_MODES, {
+            milestones: 'Combo milestones only',
+            everyKeystroke: 'Every keystroke (subtle)',
+          }),
         },
       ],
     },
@@ -557,6 +596,12 @@ function renderDashboard(): HTMLElement {
       settings()['combo.enabled'] ? `On · best ${state?.bestCombo ?? 0}` : 'Off',
     ),
     stat('Performance mode', () => (settings().performanceMode ? 'On' : 'Off')),
+    stat(
+      'Activity',
+      () =>
+        (state?.status.active ? 'Active' : (state?.status.description ?? '')) +
+        (state?.status.reducedMotion ? ' · reduced motion' : ''),
+    ),
   );
   refreshers.push(() => cards.classList.toggle('disabled', !settings().enabled));
   const actions = el('div', { class: 'actions' });
@@ -569,7 +614,9 @@ function renderDashboard(): HTMLElement {
   tryIt.addEventListener('click', () => send({ type: 'command', command: 'previewInEditor' }));
   const settingsBtn = el('button', { class: 'secondary' }, 'Open settings');
   settingsBtn.addEventListener('click', () => send({ type: 'command', command: 'openSettings' }));
-  actions.append(toggle, tryIt, settingsBtn);
+  const soundBtn = el('button', { class: 'secondary' }, 'Sound view');
+  soundBtn.addEventListener('click', () => send({ type: 'command', command: 'openSoundView' }));
+  actions.append(toggle, tryIt, settingsBtn, soundBtn);
   wrap.append(el('section', { class: 'card' }, el('h2', {}, 'Dashboard'), cards, actions));
   return wrap;
 }
@@ -743,6 +790,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     for (const key of [...pending.keys()]) if (!timers.has(key)) pending.delete(key);
     if (first) render();
     else refresh();
+    // The preview pauses while VS Code is unfocused (no work in the background).
+    if (state.status.windowFocused) preview?.start();
+    else preview?.stop();
   } else if (message.type === 'notice' && notice) {
     notice.textContent = message.text;
     notice.className = `notice ${message.level}`;
@@ -750,4 +800,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
   }
 });
 
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const reportMotion = (): void =>
+  send({ type: 'environment', prefersReducedMotion: motionQuery.matches });
+motionQuery.addEventListener('change', reportMotion);
 send({ type: 'ready' });
+reportMotion();

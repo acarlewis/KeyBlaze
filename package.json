@@ -81,6 +81,11 @@
         "command": "keyblaze.resetSettings",
         "title": "Reset Settings",
         "category": "KeyBlaze"
+      },
+      {
+        "command": "keyblaze.openSoundView",
+        "title": "Open Sound View",
+        "category": "KeyBlaze"
       }
     ],
     "configuration": {
@@ -334,7 +339,7 @@
           "type": "boolean",
           "default": false,
           "order": 50,
-          "markdownDescription": "Enable synthesised sound effects. They play through the KeyBlaze Sound view, which must be opened and clicked once because of the browser autoplay policy."
+          "markdownDescription": "Enable synthesised sound effects. They play through the **KeyBlaze Sound** view in the Explorer (command: *KeyBlaze: Open Sound View*), which must be opened and clicked once per session because of the browser autoplay policy. Sounds are paused while a screen reader is in use (see `#keyblaze.accessibility.disableWithScreenReader#`)."
         },
         "keyblaze.sound.volume": {
           "type": "number",
@@ -415,13 +420,13 @@
           "type": "boolean",
           "default": true,
           "order": 70,
-          "markdownDescription": "Reduce or disable motion when `#workbench.reduceMotion#` is on, or is `auto` and the OS requests reduced motion."
+          "markdownDescription": "Use calm, low-motion effects when `#workbench.reduceMotion#` is `on`, or when it is `auto` and the OS requests reduced motion. Low motion means tiny sparks, no Impact Pulse, no pulsing and no badge pop. The OS preference is detected by KeyBlaze's webviews (Control Panel or Sound view), so `auto` takes effect once one of them has been opened."
         },
         "keyblaze.accessibility.disableWithScreenReader": {
           "type": "boolean",
           "default": true,
           "order": 71,
-          "markdownDescription": "Disable effects when screen-reader optimisation (`#editor.accessibilitySupport#`) is on."
+          "markdownDescription": "Pause all KeyBlaze effects, combos and sounds while screen-reader optimisation (`#editor.accessibilitySupport#`) is `on`."
         },
         "keyblaze.excludeLanguages": {
           "type": "array",
@@ -442,6 +447,16 @@
           "description": "Glob patterns for files where KeyBlaze is disabled, for example \"**/*.min.js\"."
         }
       }
+    },
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "keyblaze.sound",
+          "name": "KeyBlaze Sound",
+          "when": "config.keyblaze.sound.enabled"
+        }
+      ]
     }
   },
   "scripts": {
@@ -458,7 +473,8 @@
     "test:integration": "npm run build && npm run compile-tests && vscode-test",
     "test": "npm run test:unit && npm run test:integration",
     "package": "vsce package",
-    "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs && node test/visual/verify-combo.mjs && node test/visual/verify-panel.mjs"
+    "test:visual": "npm run build && npm run compile-tests && node test/visual/verify-placement.mjs && node test/visual/verify-combo.mjs && node test/visual/verify-panel.mjs && node test/visual/verify-sound.mjs",
+    "test:performance": "npm run build && node test/visual/verify-performance.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -13,10 +13,22 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 export const EXTENSION_ID = `${pkg.publisher}.${pkg.name}`;
 export const CONTRIBUTED_COMMANDS = pkg.contributes.commands.map((c) => c.command);
 
+let pinned = false;
+
+/**
+ * Returns the extension's test API. The test window may not have OS focus (tests run in the
+ * background), which KeyBlaze treats as "paused", so focus is pinned once for deterministic tests.
+ * The unfocused behaviour has its own test that overrides this.
+ */
 export async function getApi(): Promise<KeyBlazeApi> {
   const ext = vscode.extensions.getExtension<KeyBlazeApi>(EXTENSION_ID);
   if (!ext) throw new Error(`Extension ${EXTENSION_ID} not found`);
-  return ext.isActive ? ext.exports : ext.activate();
+  const api = ext.isActive ? ext.exports : await ext.activate();
+  if (!pinned) {
+    api.setEnvironmentOverride({ windowFocused: true });
+    pinned = true;
+  }
+  return api;
 }
 
 export function config(): vscode.WorkspaceConfiguration {

@@ -28,13 +28,28 @@ export interface PanelState {
   readonly version: string;
   readonly vscodeVersion: string;
   readonly bestCombo: number;
+  /** Live environment policy (see core/motion.ts). */
+  readonly status: {
+    readonly active: boolean;
+    readonly reason?: string;
+    readonly description: string;
+    readonly reducedMotion: boolean;
+    readonly windowFocused: boolean;
+    readonly soundAllowed: boolean;
+  };
 }
 
 export type HostMessage =
   | { readonly type: 'state'; readonly state: PanelState }
   | { readonly type: 'notice'; readonly level: 'info' | 'error'; readonly text: string };
 
-export const PANEL_COMMANDS = ['toggle', 'previewInEditor', 'openSettings', 'openDocs'] as const;
+export const PANEL_COMMANDS = [
+  'toggle',
+  'previewInEditor',
+  'openSettings',
+  'openDocs',
+  'openSoundView',
+] as const;
 export type PanelCommand = (typeof PANEL_COMMANDS)[number];
 
 export type WebviewMessage =
@@ -44,7 +59,8 @@ export type WebviewMessage =
   | { readonly type: 'applyPreset'; readonly id: PresetId }
   | { readonly type: 'resetAll' }
   | { readonly type: 'command'; readonly command: PanelCommand }
-  | { readonly type: 'error'; readonly message: string };
+  | { readonly type: 'error'; readonly message: string }
+  | { readonly type: 'environment'; readonly prefersReducedMotion: boolean };
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -75,6 +91,10 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
       return typeof raw.command === 'string' &&
         (PANEL_COMMANDS as readonly string[]).includes(raw.command)
         ? { type: 'command', command: raw.command as PanelCommand }
+        : undefined;
+    case 'environment':
+      return typeof raw.prefersReducedMotion === 'boolean'
+        ? { type: 'environment', prefersReducedMotion: raw.prefersReducedMotion }
         : undefined;
     case 'error':
       return typeof raw.message === 'string'

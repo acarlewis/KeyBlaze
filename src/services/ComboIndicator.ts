@@ -5,11 +5,15 @@ import { renderComboBadge } from '../render/ComboBadge';
 import { svgToDataUri } from '../render/svg';
 import type { Logger } from '../utils/logger';
 import type { ComboChange, ComboService } from './ComboService';
+import type { EnvironmentService } from './EnvironmentService';
 import { editorFontMetrics } from './EditorMetrics';
 import type { SettingsService } from './SettingsService';
 
-/** Minimum time between badge re-renders while typing (each re-render is a new image). */
-const UPDATE_INTERVAL_MS = 110;
+/**
+ * Minimum time between badge re-renders while typing. Each re-render is a new image and a new CSS
+ * rule (~4.5 ms renderer style recalculation), so 4 updates/s keeps the badge lively but cheap.
+ */
+const UPDATE_INTERVAL_MS = 250;
 
 /**
  * Draws the combo badge after the end of the caret line, next to the code and never over it.
@@ -32,7 +36,15 @@ export class ComboIndicator implements vscode.Disposable {
     private readonly settings: SettingsService,
     combo: ComboService,
     private readonly logger: Logger,
+    private readonly env?: EnvironmentService,
   ) {
+    if (env) {
+      this.disposables.push(
+        env.onDidChange((policy) => {
+          if (!policy.active) this.clear();
+        }),
+      );
+    }
     this.disposables.push(
       combo.onDidChange((c) => this.onChange(c)),
       settings.onDidChange(({ settings: s }) => {
@@ -93,8 +105,9 @@ export class ComboIndicator implements vscode.Disposable {
     if (this.editor && this.editor !== editor) this.clear();
     const { lineHeight } = editorFontMetrics(editor.document);
     const milestone = change.milestone;
+    const reduced = this.env?.policy.reducedMotion ?? false;
     const shake =
-      milestone && s['screenShake.enabled']
+      milestone && s['screenShake.enabled'] && !reduced
         ? {
             amplitude: impactAmplitude(
               { intensity: s['screenShake.intensity'], durationMs: s['screenShake.duration'] },
@@ -114,6 +127,7 @@ export class ComboIndicator implements vscode.Disposable {
       celebrate: milestone !== undefined,
       ...(shake ? { shake } : {}),
       nonce: `${Date.now().toString(36)}.${(++this.nonce).toString(36)}`,
+      animate: !reduced,
     });
     const line = editor.selection.active.line;
     const end = editor.document.lineAt(line).range.end;

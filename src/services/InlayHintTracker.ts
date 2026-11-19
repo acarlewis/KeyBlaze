@@ -20,7 +20,11 @@ export class InlayHintTracker implements vscode.Disposable {
   private firstHintByLine = new Map<number, number>();
   private generation = 0;
 
-  constructor() {
+  /**
+   * @param isNeeded only query providers when the result can matter: KeyBlaze active and `placement`
+   * set to `auto`. Otherwise the tracker does no background work at all.
+   */
+  constructor(private readonly isNeeded: () => boolean = () => true) {
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor(() => this.schedule()),
       vscode.window.onDidChangeTextEditorVisibleRanges((e) => {
@@ -49,6 +53,8 @@ export class InlayHintTracker implements vscode.Disposable {
 
   private schedule(): void {
     if (this.timer !== undefined) clearTimeout(this.timer);
+    this.timer = undefined;
+    if (!this.isNeeded()) return;
     this.timer = setTimeout(() => void this.refresh(), REFRESH_DELAY_MS);
   }
 

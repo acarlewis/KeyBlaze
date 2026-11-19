@@ -5,6 +5,7 @@ import type { Logger } from '../utils/logger';
 import { safely } from '../utils/logger';
 import type { ComboService } from './ComboService';
 import type { EffectsController } from './EffectsController';
+import type { EnvironmentService } from './EnvironmentService';
 import type { SettingsService } from './SettingsService';
 
 /**
@@ -26,6 +27,7 @@ export class ImpactPulse implements vscode.Disposable {
     combo: ComboService,
     private readonly effects: EffectsController,
     private readonly logger: Logger,
+    private readonly env?: EnvironmentService,
   ) {
     this.disposables.push(
       combo.onMilestone((m) =>
@@ -54,13 +56,17 @@ export class ImpactPulse implements vscode.Disposable {
     count: number,
   ): void {
     const s = this.settings.get();
+    const policy = this.env?.policy;
+    if (policy && !policy.active) return;
     const impact = { intensity: s['screenShake.intensity'], durationMs: s['screenShake.duration'] };
-    const shake = s['screenShake.enabled']
-      ? {
-          amplitude: impactAmplitude(impact, milestone),
-          durationMs: impactDuration(impact, milestone),
-        }
-      : undefined;
+    // Reduced motion: celebrate with a small burst only; no shake, no flash.
+    const shake =
+      s['screenShake.enabled'] && !policy?.reducedMotion
+        ? {
+            amplitude: impactAmplitude(impact, milestone),
+            durationMs: impactDuration(impact, milestone),
+          }
+        : undefined;
     this.effects.celebrate(editor, positions, milestone, shake);
     this.celebrations++;
     if (shake && s['screenShake.flashLine']) {
