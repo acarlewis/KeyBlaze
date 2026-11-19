@@ -37,7 +37,8 @@ export interface KeyBlazeApi {
     comboBadgeVisible: boolean;
     comboBadgeRenders: number;
     celebrations: number;
-    cursorEffects: { auraVisible: boolean; oneShots: number };
+    cursorEffects: { auraVisible: boolean; oneShots: number; trackedDocuments: number };
+    flashTypes: number;
     controlPanel: ControlPanelProvider['stats'];
     policy: MotionPolicy;
     sound: SoundViewProvider['stats'];
@@ -135,6 +136,7 @@ export function createKeyBlaze(context: KeyBlazeContext, options: CreateOptions 
       comboBadgeRenders: comboIndicator.renderCount,
       celebrations: impact.celebrationCount,
       cursorEffects: cursorEffects.stats,
+      flashTypes: impact.flashTypeCount,
       controlPanel: controlPanel.stats,
       policy: env.policy,
       sound: soundView.stats,

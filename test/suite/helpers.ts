@@ -1,3 +1,4 @@
+import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -26,9 +27,59 @@ export async function getApi(): Promise<KeyBlazeApi> {
   const api = ext.isActive ? ext.exports : await ext.activate();
   if (!pinned) {
     api.setEnvironmentOverride({ windowFocused: true });
+    await normalizeLayout();
     pinned = true;
   }
   return api;
+}
+
+/**
+ * Gives every VS Code version the same editor area: VS Code 1.147 opens the Chat secondary side bar by
+ * default and the panel may be open, which shrinks the editor on small CI displays (1024×768 Windows
+ * runners, xvfb). Placement depends on how many lines are visible, so tests must not depend on that.
+ */
+export async function normalizeLayout(): Promise<void> {
+  for (const command of ['workbench.action.closeAuxiliaryBar', 'workbench.action.closePanel']) {
+    try {
+      await vscode.commands.executeCommand(command);
+    } catch {
+      // Command not available in this VS Code version: nothing to close.
+    }
+  }
+}
+
+/**
+ * Fails with a clear message when the editor doesn't show lines `from`..`to`. Placement legitimately
+ * falls back to `notVisible` in a too-small window, so a test expecting another outcome must first
+ * prove that the window is large enough rather than report a misleading reason.
+ */
+export async function assertLinesVisible(
+  editor: vscode.TextEditor,
+  from: number,
+  to: number,
+  timeoutMs = 3000,
+): Promise<void> {
+  // visibleRanges reaches the extension host asynchronously after a reveal (slowly for very large
+  // documents), so wait for the scroll to land before judging whether the window is big enough.
+  const covered = (): boolean =>
+    editor.visibleRanges.some((r) => r.start.line <= from && r.end.line >= to);
+  const deadline = Date.now() + timeoutMs;
+  while (!covered() && Date.now() < deadline) await wait(50);
+  const ranges = editor.visibleRanges.map((r) => [r.start.line, r.end.line] as const);
+  const ok = covered();
+  assert.ok(
+    ok,
+    `test precondition: lines ${from}-${to} must be visible, but the editor shows ` +
+      `${JSON.stringify(ranges)} (window too small for this scenario)`,
+  );
+}
+
+/**
+ * Upper bound for events that are rate-limited with a minimum gap: in `elapsedMs`, at most one event
+ * plus one per full gap can pass. Assertions use this instead of assuming how fast keystrokes arrive.
+ */
+export function maxPaced(elapsedMs: number, minGapMs: number): number {
+  return 1 + Math.floor(elapsedMs / minGapMs);
 }
 
 export function config(): vscode.WorkspaceConfiguration {
@@ -79,10 +130,11 @@ export async function placeCaret(
   editor: vscode.TextEditor,
   line: number,
   character: number,
+  reveal: vscode.TextEditorRevealType = vscode.TextEditorRevealType.InCenter,
 ): Promise<void> {
   const pos = new vscode.Position(line, character);
   editor.selection = new vscode.Selection(pos, pos);
-  editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+  editor.revealRange(new vscode.Range(pos, pos), reveal);
   await wait(150);
 }
 

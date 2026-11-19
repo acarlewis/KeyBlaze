@@ -1,6 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { createKeyBlaze } from '../../src/extension';
+import { linesBelowFor } from '../../src/core/placement';
+import { qualityProfile } from '../../src/core/quality';
+import { editorFontMetrics } from '../../src/services/EditorMetrics';
 import type { KeystrokeEvent } from '../../src/services/TypingDetector';
 import type { Logger } from '../../src/utils/logger';
 import { safely } from '../../src/utils/logger';
@@ -9,6 +12,7 @@ import {
   closeAllEditors,
   config,
   getApi,
+  assertLinesVisible,
   openFixture,
   placeCaret,
   resetSettings,
@@ -183,7 +187,11 @@ suite('Error handling and edge cases', () => {
     );
     const doc = await vscode.workspace.openTextDocument({ content, language: 'typescript' });
     const editor = await vscode.window.showTextDocument(doc);
-    await placeCaret(editor, 25_000, 8);
+    await placeCaret(editor, 25_000, 8, vscode.TextEditorRevealType.AtTop);
+    // Room for a full-circle burst (the decision this test asserts), computed like placement does.
+    const { fontSize, lineHeight } = editorFontMetrics(doc);
+    const needed = linesBelowFor(qualityProfile('high', false).maxHalfExtent, lineHeight, fontSize);
+    await assertLinesVisible(editor, 25_000, 25_000 + needed);
     const before = api.getStats().totalBursts;
     const start = Date.now();
     await typeText('x');

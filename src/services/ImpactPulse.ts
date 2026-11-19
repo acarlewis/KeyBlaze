@@ -30,6 +30,11 @@ export class ImpactPulse implements vscode.Disposable {
     private readonly env?: EnvironmentService,
   ) {
     this.disposables.push(
+      // Flash types are cached per colour + alpha. A palette change makes them unreachable, so release
+      // them instead of accumulating decoration types (and their CSS rules) for the whole session.
+      settings.onDidChange(({ changed }) => {
+        if (changed.has('colors')) this.releaseFlashTypes();
+      }),
       combo.onMilestone((m) =>
         safely(logger, 'Milestone celebration failed', () => {
           if (m.editor && m.positions) this.celebrate(m.editor, m.positions, m.milestone, m.count);
@@ -42,11 +47,20 @@ export class ImpactPulse implements vscode.Disposable {
     return this.celebrations;
   }
 
-  dispose(): void {
+  /** Number of cached flash decoration types (diagnostics/tests). */
+  get flashTypeCount(): number {
+    return this.flashTypes.size;
+  }
+
+  private releaseFlashTypes(): void {
     this.clearFlash();
-    for (const d of this.disposables) d.dispose();
     for (const t of this.flashTypes.values()) t.dispose();
     this.flashTypes.clear();
+  }
+
+  dispose(): void {
+    for (const d of this.disposables) d.dispose();
+    this.releaseFlashTypes();
   }
 
   private celebrate(

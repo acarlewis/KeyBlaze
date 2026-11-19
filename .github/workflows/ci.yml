@@ -22,8 +22,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -42,15 +42,17 @@ jobs:
         label: [stable, minimum]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - name: Integration tests (Linux, virtual display)
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
+        # xvfb-run defaults to a 640x480, 8-bit screen: far smaller than any real VS Code window.
+        # Placement depends on how many editor lines are visible, so use a realistic display.
+        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
       - name: Integration tests
         if: runner.os != 'Linux'
         run: npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
@@ -60,8 +62,8 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -70,7 +72,7 @@ jobs:
       - name: Verify packaged files (allowlist)
         run: node scripts/check-package-files.mjs
       - run: npm run package
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vsix
           path: '*.vsix'

@@ -12,12 +12,14 @@ import {
   screenshot,
   sleep,
   EXTENSION_ID,
+  markFailed,
 } from '../../spike/lib.mjs';
 
 const ID = EXTENSION_ID;
 const out = { checks: [] };
 const check = (name, ok, detail = {}) => {
   out.checks.push({ name, ok: !!ok, detail });
+  if (!ok) markFailed();
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(detail)}`);
 };
 const stats = async () => (await poc('keyblaze', { id: ID })).sound;
@@ -66,6 +68,7 @@ try {
 } catch (err) {
   out.error = String(err?.stack ?? err);
   console.error(err);
+  markFailed();
 } finally {
   fs.writeFileSync(path.join(RESULTS, 'verify-sound.json'), JSON.stringify(out, null, 2));
   await vs.close();

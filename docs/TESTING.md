@@ -23,15 +23,31 @@ only**. The extension itself uses only the official VS Code API.
 
 ## Latest results (2026-11-19, Windows 11)
 
-| Suite                                                | VS Code 1.147.0                                | VS Code 1.90.0                  |
-| ---------------------------------------------------- | ---------------------------------------------- | ------------------------------- |
-| Unit                                                 | 287 passing                                    | n/a (no VS Code)                |
-| Integration                                          | 67 passing                                     | 67 passing (3 consecutive runs) |
-| Placement (12 cases)                                 | max dx 0.48 px · max dy 0.64 px · text shift 0 | identical                       |
-| Combo, badge, Impact Pulse, cursor auras (11 checks) | all pass                                       | all pass                        |
-| Control Panel (7 checks, incl. real clicks)          | all pass                                       | all pass                        |
-| Sound (real click unlock, WebAudio playback)         | pass                                           | pass                            |
-| Unit coverage of pure modules                        | 99.6 % statements · 95.1 % branches            |                                 |
+| Suite                                                 | VS Code 1.147.0                                | VS Code 1.90.0   |
+| ----------------------------------------------------- | ---------------------------------------------- | ---------------- |
+| Unit                                                  | 288 passing                                    | n/a (no VS Code) |
+| Integration                                           | 71 passing                                     | 71 passing       |
+| Placement (12 cases, asserted: ≤ 1 px, no text shift) | max dx 0.48 px · max dy 0.64 px · text shift 0 | all pass         |
+| Combo, badge, Impact Pulse, cursor auras (11 checks)  | all pass                                       | all pass         |
+| Control Panel (7 checks, incl. real clicks)           | all pass                                       | all pass         |
+| Sound (real click unlock, WebAudio playback)          | pass                                           | pass             |
+| Installed VSIX (7 checks)                             | all pass                                       | all pass         |
+| Unit coverage of pure modules                         | 99.6 % statements · 95.1 % branches            |                  |
+
+Every visual and VSIX script exits with a non-zero code when any check fails or the script throws.
+
+### Notes on the test environment
+
+- Placement depends on how many editor lines are visible: a burst is anchored below the caret only
+  when the lines it needs are on screen. The placement integration tests therefore close the
+  secondary side bar and the panel, reveal the caret at the top of the editor, and check that
+  precondition explicitly, so a window that is too small fails with a clear message instead of a
+  misleading placement result. On Linux CI, `xvfb-run` gets a 1280x1024 screen (its default is
+  640x480).
+- Rate-limited behaviour is asserted with exact upper bounds derived from the elapsed time and the
+  configured minimum gap, not from assumed keystroke speed.
+- On GitHub Actions, failing integration tests are reported as workflow annotations
+  (`test/suite/ciAnnotations.test.ts`), which are readable without signing in.
 
 ## Requirement → tests
 

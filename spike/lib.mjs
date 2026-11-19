@@ -193,6 +193,25 @@ export async function screenshot(cdp, name, clip) {
 }
 
 /**
+ * Like measure(), but retries while no effect image could be measured. Shortly after a keystroke
+ * Monaco re-renders the edited line (tokenization), which can detach a span between querying and
+ * measuring it; measure() skips such nodes, so a single sample can miss an image that is on screen.
+ */
+export async function measureImages(cdp, { tries = 10, gapMs = 30 } = {}) {
+  let m = await measure(cdp);
+  for (let i = 1; i < tries && m.images.length === 0; i++) {
+    await sleep(gapMs);
+    m = await measure(cdp);
+  }
+  return m;
+}
+
+/** Marks the process as failed (non-zero exit code) without aborting the remaining checks. */
+export function markFailed() {
+  process.exitCode = 1;
+}
+
+/**
  * Measures, in CSS pixels of the workbench, the caret of every text editor and the box of every
  * effect image rendered by a decoration (`::after` pseudo-elements whose content is our SVG).
  */

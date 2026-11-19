@@ -87,6 +87,8 @@ export class CursorEffects implements vscode.Disposable {
       vscode.workspace.onDidChangeTextDocument((e) =>
         this.lastEditAt.set(e.document.uri.toString(), Date.now()),
       ),
+      // Without this the map keeps one entry per document ever edited (output channels included).
+      vscode.workspace.onDidCloseTextDocument((doc) => this.lastEditAt.delete(doc.uri.toString())),
       vscode.window.onDidChangeTextEditorSelection((e) =>
         safely(logger, 'Cursor effect failed', () => this.onSelection(e)),
       ),
@@ -113,8 +115,12 @@ export class CursorEffects implements vscode.Disposable {
   }
 
   /** Diagnostics for tests. */
-  get stats(): { auraVisible: boolean; oneShots: number } {
-    return { auraVisible: this.auraEditor !== undefined, oneShots: this.oneShots };
+  get stats(): { auraVisible: boolean; oneShots: number; trackedDocuments: number } {
+    return {
+      auraVisible: this.auraEditor !== undefined,
+      oneShots: this.oneShots,
+      trackedDocuments: this.lastEditAt.size,
+    };
   }
 
   dispose(): void {

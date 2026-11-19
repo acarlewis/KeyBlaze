@@ -13,6 +13,7 @@ import {
   screenshot,
   sleep,
   EXTENSION_ID,
+  markFailed,
 } from '../../spike/lib.mjs';
 
 const ID = EXTENSION_ID;
@@ -25,6 +26,7 @@ lines[10] = 'const shortLine = 1;';
 
 const check = (name, ok, detail) => {
   out.checks.push({ name, ok, detail });
+  if (!ok) markFailed();
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(detail)}`);
 };
 
@@ -150,6 +152,7 @@ try {
 } catch (err) {
   out.error = String(err?.stack ?? err);
   console.error(err);
+  markFailed();
 } finally {
   fs.writeFileSync(path.join(RESULTS, 'verify-combo.json'), JSON.stringify(out, null, 2));
   await vs.close();
