@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(here, '..');
 export const RESULTS = path.join(here, 'results');
-const CODE = path.join(ROOT, '.vscode-test', 'vscode-win32-x64-archive-1.147.0', 'Code.exe');
+const CODE = path.join(ROOT, '.vscode-test', `vscode-win32-x64-archive-${process.env.KEYBLAZE_VSCODE_VERSION ?? '1.147.0'}`, 'Code.exe');
 const CDP_PORT = 9444;
 const POC_PORT = 9555;
 
@@ -241,10 +241,22 @@ export async function measure(cdp) {
 
   const images = [];
   for (const objectId of spanIds) {
+    try {
+      images.push(...(await measureImage(cdp, objectId)));
+    } catch {
+      // The node vanished between query and measurement (e.g. a burst expired): skip it.
+    }
+  }
+  return { editors, images };
+}
+
+async function measureImage(cdp, objectId) {
+  const images = [];
+  {
     const { nodeId } = await cdp.send('DOM.requestNode', { objectId });
     const { node } = await cdp.send('DOM.describeNode', { nodeId, depth: 1 });
     const pseudo = (node.pseudoElements ?? []).find((p) => p.pseudoType === 'after');
-    if (!pseudo) continue;
+    if (!pseudo) return images;
     const { model } = await cdp.send('DOM.getBoxModel', { backendNodeId: pseudo.backendNodeId });
     const q = model.content; // [x1,y1,x2,y2,x3,y3,x4,y4]
     const box = { x: q[0], y: q[1], w: q[2] - q[0], h: q[5] - q[1] };
@@ -267,7 +279,7 @@ export async function measure(cdp) {
     });
     images.push({ ...box, cx: box.x + box.w / 2, cy: box.y + box.h / 2, ...meta.result.value });
   }
-  return { editors, images };
+  return images;
 }
 
 /**

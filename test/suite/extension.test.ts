@@ -695,7 +695,11 @@ suite('Sound', () => {
   async function soundView() {
     const api = await getApi();
     await vscode.commands.executeCommand('keyblaze.openSoundView');
-    await waitFor(() => api.getStats().sound.resolved, 10000, 'sound view resolved');
+    await waitFor(
+      () => api.getStats().sound.resolved && api.getStats().sound.visible,
+      10000,
+      'sound view resolved and visible',
+    );
     return api;
   }
 
@@ -734,6 +738,8 @@ suite('Sound', () => {
   test('everyKeystroke mode sends rate-limited keystroke sounds', async () => {
     const api = await soundView();
     await config().update('sound.mode', 'everyKeystroke', vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getSettings()['sound.mode'] === 'everyKeystroke', 3000, 'mode applied');
+    await waitFor(() => api.getStats().policy.sound, 3000, 'sound allowed');
     const editor = await openFixture('long.ts');
     await placeCaret(editor, 10, 12);
     const sent = api.getStats().sound.sent;

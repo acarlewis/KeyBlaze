@@ -37,21 +37,45 @@ export class SoundViewProvider implements vscode.WebviewViewProvider, vscode.Dis
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
-    private readonly context: vscode.ExtensionContext,
+    private readonly context: Pick<vscode.ExtensionContext, 'extensionUri' | 'extension'>,
     private readonly settings: SettingsService,
     private readonly env: EnvironmentService,
     private readonly logger: Logger,
   ) {
     this.disposables.push(
-      settings.onDidChange(() => this.postStatus()),
+      settings.onDidChange(({ changed }) => {
+        if (changed.has('sound.enabled')) void this.syncContext();
+        this.postStatus();
+      }),
       env.onDidChange(() => this.postStatus()),
+    );
+    void this.syncContext();
+  }
+
+  /**
+   * The view is shown while the `keyblaze.soundEnabled` context key is true. A context key set by the
+   * extension is used instead of a `config.*` when-clause, because older VS Code versions (verified on
+   * 1.90) don't re-evaluate `config.*` view conditions when the setting changes at runtime.
+   */
+  async syncContext(): Promise<void> {
+    await vscode.commands.executeCommand(
+      'setContext',
+      'keyblaze.soundEnabled',
+      this.settings.get()['sound.enabled'],
     );
   }
 
   /** Diagnostics for tests. */
-  get stats(): { resolved: boolean; audio: AudioState; sent: number; played: number } {
+  get stats(): {
+    resolved: boolean;
+    visible: boolean;
+    audio: AudioState;
+    sent: number;
+    played: number;
+  } {
     return {
       resolved: this.view !== undefined,
+      visible: this.view?.visible ?? false,
       audio: this.audio,
       sent: this.sent,
       played: this.played,
@@ -64,14 +88,15 @@ export class SoundViewProvider implements vscode.WebviewViewProvider, vscode.Dis
     const mediaRoot = vscode.Uri.joinPath(this.context.extensionUri, 'media');
     view.webview.options = { enableScripts: true, localResourceRoots: [scriptRoot, mediaRoot] };
     view.webview.html = this.html(view.webview, scriptRoot, mediaRoot);
-    view.webview.onDidReceiveMessage(
-      (raw: unknown) => this.onMessage(raw),
-      undefined,
-      this.disposables,
-    );
+    // Tied to this view's lifetime: the view is re-created whenever sound is turned off and on again.
+    const messages = view.webview.onDidReceiveMessage((raw: unknown) => this.onMessage(raw));
     view.onDidDispose(() => {
-      this.view = undefined;
-      this.audio = 'unknown';
+      messages.dispose();
+      // Only forget the view if it is still the current one (a new one may already be resolved).
+      if (this.view === view) {
+        this.view = undefined;
+        this.audio = 'unknown';
+      }
     });
   }
 

@@ -48,8 +48,34 @@ export interface KeyBlazeApi {
   sendControlPanelMessage(message: unknown): Promise<boolean>;
 }
 
+export interface CreateOptions {
+  /**
+   * Register process-wide contributions (commands and the Sound view provider). Only one instance may
+   * do this. Tests create extra, isolated instances with `false` to verify disposal.
+   */
+  readonly registerGlobals?: boolean;
+  /** Output channel name (isolated test instances use their own). */
+  readonly logName?: string;
+}
+
+/** Context members KeyBlaze needs: lets tests build an isolated instance with a fake context. */
+export type KeyBlazeContext = Pick<
+  vscode.ExtensionContext,
+  'subscriptions' | 'globalState' | 'extensionUri' | 'extension'
+>;
+
 export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
-  const logger = new Logger();
+  return createKeyBlaze(context);
+}
+
+/**
+ * Composition root. Everything created here is pushed onto `context.subscriptions`, so disposing them
+ * (which VS Code does on deactivation) removes every listener, timer, decoration, status bar item and
+ * webview.
+ */
+export function createKeyBlaze(context: KeyBlazeContext, options: CreateOptions = {}): KeyBlazeApi {
+  const registerGlobals = options.registerGlobals ?? true;
+  const logger = new Logger(options.logName);
   const settings = new SettingsService();
   const env = new EnvironmentService(settings, context.globalState);
   const pool = new DecorationSlotPool(settings.get()['performance.maxConcurrentBursts'], logger);
@@ -83,11 +109,15 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
     controlPanel,
     soundView,
     sound,
-    vscode.window.registerWebviewViewProvider(SOUND_VIEW_ID, soundView, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    ...registerCommands({ context, settings, effects, pool, logger, controlPanel }),
   );
+  if (registerGlobals) {
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(SOUND_VIEW_ID, soundView, {
+        webviewOptions: { retainContextWhenHidden: true },
+      }),
+      ...registerCommands({ context, settings, effects, pool, logger, controlPanel, soundView }),
+    );
+  }
 
   logger.info(`KeyBlaze activated (VS Code ${vscode.version}).`);
 
@@ -115,5 +145,5 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
 }
 
 export function deactivate(): void {
-  // Everything is disposed through context.subscriptions.
+  // Everything is disposed through context.subscriptions (see createKeyBlaze).
 }

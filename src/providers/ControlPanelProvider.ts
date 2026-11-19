@@ -30,7 +30,7 @@ export class ControlPanelProvider implements vscode.Disposable {
   private rejected = 0;
 
   constructor(
-    private readonly context: vscode.ExtensionContext,
+    private readonly context: Pick<vscode.ExtensionContext, 'extensionUri' | 'extension'>,
     private readonly settings: SettingsService,
     private readonly combo: ComboService,
     private readonly logger: Logger,

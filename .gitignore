@@ -7,3 +7,6 @@ out/
 
 # Spike harness output (VS Code profiles, screenshots, raw JSON)
 spike/results/
+coverage/
+# Written by the workspace-scope integration test
+test/fixtures/workspace/.vscode/

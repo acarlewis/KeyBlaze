@@ -1,0 +1,45 @@
+# Continuous integration for KeyBlaze.
+# Not yet executed on GitHub (the project has no remote); every step has been run locally on Windows.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Typecheck, lint, format, unit tests, coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:coverage
+
+  integration:
+    name: Integration (${{ matrix.os }}, VS Code ${{ matrix.label }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        label: [stable, minimum]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Integration tests (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
+      - name: Integration tests
+        if: runner.os != 'Linux'
+        run: npm run ${{ matrix.label == 'stable' && 'test:integration' || 'test:min-vscode' }}
