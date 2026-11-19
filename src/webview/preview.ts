@@ -8,6 +8,7 @@ import { AnimationEngine } from '../core/AnimationEngine';
 import type { BurstTrack } from '../core/BurstTrack';
 import { ComboManager, displayThreshold } from '../core/ComboManager';
 import { tierColor } from '../core/impact';
+import { withMotionPolicy } from '../core/motion';
 import { ParticleEngine } from '../core/ParticleEngine';
 import type { EffectVariant } from '../core/placement';
 import { qualityProfile } from '../core/quality';
@@ -51,6 +52,8 @@ export class Preview {
     private readonly canvas: HTMLCanvasElement,
     private readonly badge: HTMLImageElement,
     private getSettings: () => KeyBlazeSettings,
+    /** The extension's motion policy says "reduced motion": preview what the editor shows then. */
+    private readonly policyReducedMotion: () => boolean = () => false,
   ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D is not available');
@@ -197,7 +200,9 @@ export class Preview {
     bypass: boolean,
     overrides: Partial<KeyBlazeSettings> = {},
   ): void {
-    const s = { ...this.settings(), ...overrides };
+    const base = { ...this.settings(), ...overrides };
+    // Same calm bursts as the editor under reduced motion (EffectsController applies these too).
+    const s = withMotionPolicy(base, this.policyReducedMotion());
     if (!this.engine.admit(s, bypass)) return;
     const profile = qualityProfile(s['performance.quality'], s.performanceMode);
     const track = this.engine.simulate(s, { variant: this.variant });

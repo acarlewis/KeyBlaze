@@ -23,6 +23,12 @@ const MAX_CURSORS = 8;
 const EDIT_SUPPRESS_MS = 120;
 /** Aura moves at most 10×/s: each move with a new column margin adds a CSS rule. */
 const AURA_THROTTLE_MS = 100;
+/**
+ * The aura pulses while the caret is in use and rests (a static image) after this long without caret
+ * activity. A looping SMIL image makes Chromium paint every display frame (about a quarter to almost
+ * half of a CPU core, measured), which an idle editor should not pay for indefinitely.
+ */
+export const AURA_REST_MS = 5000;
 
 /** A single fading dot left behind where the caret was (trail effect). */
 const TrailDot: Effect = {
@@ -44,7 +50,8 @@ const TrailDot: Effect = {
 
 /**
  * Optional cursor effects (`keyblaze.cursor.effect`), following the real caret of the active editor:
- * - glow / ring: a looping aura at every caret, moved on each selection change (throttled).
+ * - glow / ring: an aura at every caret, moved on each selection change (throttled). It pulses
+ *   while the caret is active and rests as a static image after AURA_REST_MS without activity.
  * - sparks / trail: one-shot effects when the caret is moved by navigation (not by typing, which
  *   already produces bursts). Sparks pop at the new position; trail leaves a fading dot at the old one.
  */
@@ -61,6 +68,8 @@ export class CursorEffects implements vscode.Disposable {
   private readonly lastCaret = new WeakMap<vscode.TextEditor, vscode.Position>();
   private auraEditor: vscode.TextEditor | undefined;
   private auraTimer: ReturnType<typeof setTimeout> | undefined;
+  private auraRestTimer: ReturnType<typeof setTimeout> | undefined;
+  private auraAnimated = false;
   private nonce = 0;
   private oneShots = 0;
 
@@ -68,7 +77,7 @@ export class CursorEffects implements vscode.Disposable {
     private readonly settings: SettingsService,
     private readonly detector: TypingDetector,
     private readonly inlayHints: InlayHintTracker | undefined,
-    logger: Logger,
+    private readonly logger: Logger,
     private readonly env?: EnvironmentService,
   ) {
     this.pool = new DecorationSlotPool(6, logger);
@@ -87,6 +96,8 @@ export class CursorEffects implements vscode.Disposable {
       vscode.workspace.onDidChangeTextDocument((e) =>
         this.lastEditAt.set(e.document.uri.toString(), Date.now()),
       ),
+      // Without this the map keeps one entry per document ever edited (output channels included).
+      vscode.workspace.onDidCloseTextDocument((doc) => this.lastEditAt.delete(doc.uri.toString())),
       vscode.window.onDidChangeTextEditorSelection((e) =>
         safely(logger, 'Cursor effect failed', () => this.onSelection(e)),
       ),
@@ -113,12 +124,23 @@ export class CursorEffects implements vscode.Disposable {
   }
 
   /** Diagnostics for tests. */
-  get stats(): { auraVisible: boolean; oneShots: number } {
-    return { auraVisible: this.auraEditor !== undefined, oneShots: this.oneShots };
+  get stats(): {
+    auraVisible: boolean;
+    auraAnimated: boolean;
+    oneShots: number;
+    trackedDocuments: number;
+  } {
+    return {
+      auraVisible: this.auraEditor !== undefined,
+      auraAnimated: this.auraEditor !== undefined && this.auraAnimated,
+      oneShots: this.oneShots,
+      trackedDocuments: this.lastEditAt.size,
+    };
   }
 
   dispose(): void {
     if (this.auraTimer !== undefined) clearTimeout(this.auraTimer);
+    this.clearRestTimer();
     for (const d of this.disposables) d.dispose();
     this.auraType.dispose();
     this.pool.dispose();
@@ -205,7 +227,8 @@ export class CursorEffects implements vscode.Disposable {
     }, AURA_THROTTLE_MS);
   }
 
-  private renderAura(editor: vscode.TextEditor): void {
+  /** Renders the aura at the carets: pulsing after caret activity, static when `resting`. */
+  private renderAura(editor: vscode.TextEditor, resting = false): void {
     const s = this.settings.get();
     const kind = s['cursor.effect'];
     if (!this.active(editor) || (kind !== 'glow' && kind !== 'ring')) {
@@ -215,6 +238,7 @@ export class CursorEffects implements vscode.Disposable {
     const { lineHeight } = editorFontMetrics(editor.document);
     const extents = auraExtents(kind, lineHeight);
     const color = s.colors[0] ?? '#ffb000';
+    const animate = !resting && !(this.env?.policy.reducedMotion ?? false);
     const options: vscode.DecorationOptions[] = editor.selections
       .slice(0, MAX_CURSORS)
       .map((sel) => {
@@ -229,7 +253,7 @@ export class CursorEffects implements vscode.Disposable {
           ),
           renderOptions: {
             after: {
-              contentIconPath: this.auraUri(kind, color, lineHeight, layout),
+              contentIconPath: this.auraUri(kind, color, lineHeight, layout, animate),
               width: `${layout.width}px`,
               height: `${layout.height}px`,
               margin: layout.margin,
@@ -240,6 +264,21 @@ export class CursorEffects implements vscode.Disposable {
     if (this.auraEditor && this.auraEditor !== editor) this.clearAura();
     editor.setDecorations(this.auraType, options);
     this.auraEditor = editor;
+    this.auraAnimated = animate;
+    this.clearRestTimer();
+    if (animate) {
+      this.auraRestTimer = setTimeout(() => {
+        this.auraRestTimer = undefined;
+        if (this.auraEditor === editor) {
+          safely(this.logger, 'Cursor effect failed', () => this.renderAura(editor, true));
+        }
+      }, AURA_REST_MS);
+    }
+  }
+
+  private clearRestTimer(): void {
+    if (this.auraRestTimer !== undefined) clearTimeout(this.auraRestTimer);
+    this.auraRestTimer = undefined;
   }
 
   /** Aura images are reused per geometry: they loop, so sharing one SMIL timeline is harmless. */
@@ -248,8 +287,8 @@ export class CursorEffects implements vscode.Disposable {
     color: string,
     lineHeight: number,
     layout: { width: number; height: number; originY: number },
+    animate: boolean,
   ): vscode.Uri {
-    const animate = !(this.env?.policy.reducedMotion ?? false);
     const key = `${kind}|${color}|${lineHeight}|${layout.width}|${layout.height}|${layout.originY}|${animate}`;
     let uri = this.auraUris.get(key);
     if (!uri) {
@@ -260,6 +299,7 @@ export class CursorEffects implements vscode.Disposable {
   }
 
   private clearAura(): void {
+    this.clearRestTimer();
     const editor = this.auraEditor;
     this.auraEditor = undefined;
     if (!editor) return;

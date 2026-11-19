@@ -21,7 +21,7 @@ const POC_PORT = 9555;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function launch({ settings = {}, width = 1400, height = 900, extraExtensions = [], extensionsDir, keepInstalledExtensions = false } = {}) {
+export async function launch({ settings = {}, width = 1400, height = 900, extraExtensions = [], extensionsDir, keepInstalledExtensions = false, inspectExtensionsPort } = {}) {
   const userData = path.join(RESULTS, 'user-data');
   fs.rmSync(userData, { recursive: true, force: true });
   fs.mkdirSync(path.join(userData, 'User'), { recursive: true });
@@ -60,6 +60,7 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
       `--extensions-dir=${extensionsDir ?? path.join(RESULTS, 'extensions')}`,
       ...(keepInstalledExtensions ? [] : ['--disable-extensions']),
       `--remote-debugging-port=${CDP_PORT}`,
+      ...(inspectExtensionsPort ? [`--inspect-extensions=${inspectExtensionsPort}`] : []),
       '--skip-welcome',
       '--skip-release-notes',
       '--disable-workspace-trust',
@@ -101,6 +102,9 @@ export async function launch({ settings = {}, width = 1400, height = 900, extraE
   return {
     version,
     cdp,
+    /** Process IDs: the VS Code main process and the extension host (for CPU/memory sampling). */
+    pid: proc.pid,
+    extensionHostPid: (await poc('ping')).pid,
     async close() {
       try {
         cdp.close();
@@ -121,7 +125,7 @@ export async function poc(op, params = {}) {
   return json;
 }
 
-async function connect(url) {
+export async function connect(url) {
   const ws = new WebSocket(url);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve);
@@ -190,6 +194,25 @@ export async function screenshot(cdp, name, clip) {
   const file = path.join(RESULTS, `${name}.png`);
   fs.writeFileSync(file, Buffer.from(shot.data, 'base64'));
   return file;
+}
+
+/**
+ * Like measure(), but retries while no effect image could be measured. Shortly after a keystroke
+ * Monaco re-renders the edited line (tokenization), which can detach a span between querying and
+ * measuring it; measure() skips such nodes, so a single sample can miss an image that is on screen.
+ */
+export async function measureImages(cdp, { tries = 10, gapMs = 30 } = {}) {
+  let m = await measure(cdp);
+  for (let i = 1; i < tries && m.images.length === 0; i++) {
+    await sleep(gapMs);
+    m = await measure(cdp);
+  }
+  return m;
+}
+
+/** Marks the process as failed (non-zero exit code) without aborting the remaining checks. */
+export function markFailed() {
+  process.exitCode = 1;
 }
 
 /**

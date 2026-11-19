@@ -112,6 +112,16 @@ suite('placement: decideAnchor', () => {
     assert.strictEqual(decideAnchor(ctx({ visibleRanges: [[0, 12]] }), 120).reason, 'notVisible');
   });
 
+  test('when the anchor is off-screen and a spanned line could wrap, the reason is notVisible', () => {
+    // Regression: CI windows (1024x768 with side bars) showed too few lines; both fallbacks apply and
+    // visibility is checked first. Either way the burst rises from the caret line.
+    const d = decideAnchor(
+      ctx({ wordWrap: 'on', lineVisualLength: () => 120, visibleRanges: [[0, 12]] }),
+      120,
+    );
+    assert.deepStrictEqual(d, { mode: 'caret', variant: 'upward', reason: 'notVisible' });
+  });
+
   test('word wrap falls back only when a spanned line could wrap', () => {
     assert.strictEqual(
       decideAnchor(ctx({ wordWrap: 'on', lineVisualLength: () => 30 }), 120).mode,

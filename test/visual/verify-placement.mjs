@@ -9,10 +9,12 @@ import {
   key,
   launch,
   measure,
+  measureImages,
   poc,
   screenshot,
   sleep,
   EXTENSION_ID,
+  markFailed,
 } from '../../spike/lib.mjs';
 
 const ID = EXTENSION_ID;
@@ -39,7 +41,7 @@ async function burstAt(vs, label, line, char, { column, settle = 900 } = {}) {
   await sleep(60);
   const stats = await poc('keyblaze', { id: ID });
   const layout = stats.lastBurst?.layouts?.[0];
-  const m = await measure(vs.cdp);
+  const m = await measureImages(vs.cdp);
   // The newest image is the one closest to the caret horizontally after using its own origin.
   const editor = m.editors.find((e) => e.focused) ?? m.editors[0];
   const caret = editor.cursor;
@@ -65,6 +67,15 @@ async function burstAt(vs, label, line, char, { column, settle = 900 } = {}) {
   };
   results.cases.push(row);
   console.log(JSON.stringify(row));
+  // Accuracy contract (docs/TESTING.md): the origin lands within 1 px of the caret line middle and
+  // the decorated line's text does not move.
+  const ok =
+    best !== undefined &&
+    Math.abs(best.dx) <= 1 &&
+    Math.abs(best.dy) <= 1 &&
+    Math.abs(best.textShiftY) <= 0.5;
+  if (!ok) markFailed();
+  console.log(`${ok ? 'PASS' : 'FAIL'}  placement: ${label}`);
   await key(vs.cdp, 'Backspace');
   await sleep(700);
   return row;
@@ -147,6 +158,7 @@ try {
 } catch (err) {
   results.error = String(err?.stack ?? err);
   console.error(err);
+  markFailed();
 } finally {
   fs.writeFileSync(path.join(RESULTS, 'verify-placement.json'), JSON.stringify(results, null, 2));
   await vs.close();

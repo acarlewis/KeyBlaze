@@ -221,7 +221,7 @@ let liveOverrides = {};
 async function handle(op, p) {
   switch (op) {
     case 'ping':
-      return { ok: true, version: vscode.version };
+      return { ok: true, version: vscode.version, pid: process.pid };
     case 'open': {
       const doc = await vscode.workspace.openTextDocument({ content: p.content, language: p.language ?? 'plaintext' });
       const ed = await vscode.window.showTextDocument(doc, { viewColumn: p.column ?? vscode.ViewColumn.One, preview: false });
@@ -340,6 +340,9 @@ async function handle(op, p) {
     case 'markdownPreview':
       await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(p.path));
       return { ok: true };
+    case 'memory':
+      // Extension host memory (shared by every extension in this isolated instance).
+      return process.memoryUsage();
     case 'burstStats':
       return { burstGenMs: burstGenMs.splice(0) };
     default:

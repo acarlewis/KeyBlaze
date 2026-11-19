@@ -14,6 +14,7 @@ import {
   poc,
   sleep,
   EXTENSION_ID,
+  markFailed,
 } from '../../spike/lib.mjs';
 
 const ID = EXTENSION_ID;
@@ -114,6 +115,7 @@ try {
 } catch (err) {
   results.push({ error: String(err?.stack ?? err) });
   console.error(err);
+  markFailed();
 } finally {
   fs.writeFileSync(path.join(RESULTS, 'verify-performance.json'), JSON.stringify(results, null, 2));
   await vs.close();

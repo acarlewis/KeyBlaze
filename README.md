@@ -164,7 +164,8 @@ On slower machines or high-refresh displays:
 5. Exclude huge generated files with `keyblaze.excludeFiles`.
 
 KeyBlaze does no work at all while it is disabled, paused for a screen reader, or while VS Code is
-unfocused.
+unfocused. Effects cost CPU only while you type: bursts end within a second, and a cursor glow or ring
+stops pulsing 5 seconds after you stop.
 
 ## How it works
 

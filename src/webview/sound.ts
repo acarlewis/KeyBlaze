@@ -47,9 +47,11 @@ function play(recipe: ToneStep[], volume: number): void {
   master.gain.value = Math.max(0, Math.min(1, volume));
   master.connect(ac.destination);
   const t0 = ac.currentTime + 0.005;
+  let lastEnd = t0;
   for (const step of recipe) {
     const start = t0 + step.atMs / 1000;
     const end = start + step.durationMs / 1000;
+    lastEnd = Math.max(lastEnd, end);
     const env = ac.createGain();
     env.gain.setValueAtTime(0.0001, start);
     env.gain.exponentialRampToValueAtTime(Math.max(0.0002, step.gain), start + 0.004);
@@ -75,6 +77,8 @@ function play(recipe: ToneStep[], volume: number): void {
       osc.stop(end + 0.01);
     }
   }
+  // Release the sound's node graph explicitly once it has finished instead of relying on GC.
+  setTimeout(() => master.disconnect(), (lastEnd - ac.currentTime) * 1000 + 100);
   vscode.postMessage({ type: 'played' });
 }
 

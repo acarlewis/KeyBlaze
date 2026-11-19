@@ -790,7 +790,7 @@ function render(): void {
     notice,
     el('div', { class: 'layout' }, panels, aside),
   );
-  preview = new Preview(canvas, badge, settings);
+  preview = new Preview(canvas, badge, settings, () => state?.status.reducedMotion ?? false);
   preview.start();
   document.getElementById(`tab-${activeTab}`)?.click();
   refresh();

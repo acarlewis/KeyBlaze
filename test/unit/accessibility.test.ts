@@ -2,7 +2,12 @@ import * as assert from 'assert';
 import { parseWebviewMessage } from '../../src/config/messages';
 import { SOUND_THEMES, defaultSettings } from '../../src/config/schema';
 import type { Environment } from '../../src/core/motion';
-import { computePolicy, describeInactive, reducedMotionOverrides } from '../../src/core/motion';
+import {
+  computePolicy,
+  describeInactive,
+  reducedMotionOverrides,
+  withMotionPolicy,
+} from '../../src/core/motion';
 import { KEY_SOUND_MIN_GAP_MS, soundRecipe } from '../../src/core/sound';
 import { TypingRate, budgetForRate } from '../../src/core/typingRate';
 import { renderComboBadge } from '../../src/render/ComboBadge';
@@ -102,6 +107,16 @@ suite('Motion policy', () => {
       reducedMotionOverrides({ particleCount: 2, particleSize: 1 }).particleCount,
       2,
     );
+  });
+
+  test('withMotionPolicy calms bursts only under reduced motion (Control Panel preview)', () => {
+    const s = { particleCount: 30, particleSize: 6, effect: 'fire', particleLifetime: 650 };
+    assert.strictEqual(withMotionPolicy(s, false), s);
+    assert.deepStrictEqual(withMotionPolicy(s, true), {
+      ...s,
+      ...reducedMotionOverrides(s),
+    });
+    assert.strictEqual(withMotionPolicy(s, true).effect, 'minimal');
   });
 
   test('inactive reasons have readable descriptions', () => {

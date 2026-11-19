@@ -4,7 +4,17 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, RESULTS, key, launch, measure, poc, sleep, EXTENSION_ID } from '../../spike/lib.mjs';
+import {
+  ROOT,
+  RESULTS,
+  key,
+  launch,
+  measureImages,
+  poc,
+  sleep,
+  EXTENSION_ID,
+  markFailed,
+} from '../../spike/lib.mjs';
 
 const ID = EXTENSION_ID;
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -24,6 +34,7 @@ const extDir = path.join(RESULTS, `vsix-extensions-${version}`);
 const out = { version, checks: [] };
 const check = (name, ok, detail = {}) => {
   out.checks.push({ name, ok: !!ok, detail });
+  if (!ok) markFailed();
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(detail)}`);
 };
 
@@ -64,7 +75,7 @@ try {
   }
   await sleep(80);
   const stats = await poc('keyblaze', { id: ID });
-  const m = await measure(vs.cdp);
+  const m = await measureImages(vs.cdp);
   check('typing renders bursts in the editor', stats.totalBursts >= 1 && m.images.length >= 1, {
     bursts: stats.totalBursts,
     images: m.images.length,
@@ -119,6 +130,7 @@ try {
 } catch (err) {
   out.error = String(err?.stack ?? err);
   console.error(err);
+  markFailed();
 } finally {
   fs.writeFileSync(path.join(RESULTS, `verify-vsix-${version}.json`), JSON.stringify(out, null, 2));
   await vs.close();

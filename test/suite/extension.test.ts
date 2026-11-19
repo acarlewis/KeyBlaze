@@ -1,12 +1,18 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import type { KeystrokeEvent } from '../../src/services/TypingDetector';
+import { linesBelowFor } from '../../src/core/placement';
+import { qualityProfile } from '../../src/core/quality';
+import { AURA_REST_MS } from '../../src/services/CursorEffects';
+import { editorFontMetrics } from '../../src/services/EditorMetrics';
 import {
   CONTRIBUTED_COMMANDS,
   EXTENSION_ID,
   closeAllEditors,
   config,
   getApi,
+  assertLinesVisible,
+  maxPaced,
   openFixture,
   placeCaret,
   resetSettings,
@@ -158,9 +164,14 @@ suite('Typing detection and rendering', () => {
     await wait(1100); // let the previous test's rate window drain
     await openFixture('sample.ts');
     const before = api.getStats().totalBursts;
-    await typeText('abcde'); // much faster than the 375 ms minimum gap for 2/s
+    const start = Date.now();
+    await typeText('abcde'); // typed back to back; the minimum gap for 2/s is 375 ms
+    const elapsed = Date.now() - start;
     await waitFor(() => events.length === 5, 3000, 'keystrokes');
-    assert.strictEqual(api.getStats().totalBursts - before, 1);
+    const bursts = api.getStats().totalBursts - before;
+    // Every keystroke is detected, but rendering is paced: at most one burst per 375 ms.
+    assert.ok(bursts >= 1, 'the first keystroke renders');
+    assert.ok(bursts <= Math.min(5, maxPaced(elapsed, 375)), `${bursts} bursts in ${elapsed} ms`);
   });
 
   test('programmatic multi-character edits are ignored', async () => {
@@ -240,17 +251,34 @@ suite('Typing detection and rendering', () => {
   });
 });
 
+/** Worst-case burst reach below the caret at the default (high) quality: what placement checks. */
+const MAX_HALF_EXTENT = qualityProfile('high', false).maxHalfExtent;
+
 suite('Placement in a real editor', () => {
   setup(resetSettings);
   teardown(closeAllEditors);
   suiteTeardown(resetSettings);
 
-  async function burstAt(line: number, character: number) {
+  /**
+   * Places the caret at the top of the editor (all the room below it), lets the inlay-hint tracker
+   * settle, types one character and returns the burst diagnostics. With `roomBelow`, it first asserts
+   * that every line a full-circle burst needs is visible, so a too-small window can't masquerade as a
+   * placement bug (that's what happened on 1024×768 CI runners with the Chat side bar open).
+   */
+  async function burstAt(line: number, character: number, roomBelow = false) {
     const api = await getApi();
     await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
     const editor = await openFixture('long.ts');
-    await placeCaret(editor, line, character);
+    await placeCaret(editor, line, character, vscode.TextEditorRevealType.AtTop);
     await wait(500); // let the inlay-hint tracker settle
+    if (roomBelow) {
+      const { fontSize, lineHeight } = editorFontMetrics(editor.document);
+      await assertLinesVisible(
+        editor,
+        line,
+        line + linesBelowFor(MAX_HALF_EXTENT, lineHeight, fontSize),
+      );
+    }
     const before = api.getStats().totalBursts;
     await typeText('z');
     await waitFor(() => api.getStats().totalBursts > before, 3000, 'burst');
@@ -260,7 +288,7 @@ suite('Placement in a real editor', () => {
   }
 
   test('normal code: full-circle burst anchored below the caret, zero layout height', async () => {
-    const { last } = await burstAt(10, 12);
+    const { last } = await burstAt(10, 12, true);
     assert.deepStrictEqual(last.decisions[0], { mode: 'below', variant: 'full' });
     const layout = last.layouts[0];
     assert.ok(layout);
@@ -290,7 +318,7 @@ suite('Placement in a real editor', () => {
       .getConfiguration('editor')
       .update('wordWrap', 'on', vscode.ConfigurationTarget.Global);
     try {
-      const { last } = await burstAt(23, 5);
+      const { last } = await burstAt(23, 5, true);
       assert.strictEqual(last.decisions[0]?.reason, 'wordWrap');
     } finally {
       await vscode.workspace
@@ -345,11 +373,18 @@ suite('Combo system', () => {
     await comboEditor();
     const bursts = api.getStats().totalBursts;
     const celebrations = api.getStats().celebrations;
+    const start = Date.now();
     await typeText('abcde');
+    const elapsed = Date.now() - start;
     assert.strictEqual(api.getStats().combo.count, 5);
-    // One paced keystroke burst, plus milestone celebrations (which are never rate-limited).
+    // Paced keystroke bursts (1/s → 750 ms minimum gap) plus milestone celebrations, which are never
+    // rate-limited.
     const celebrated = api.getStats().celebrations - celebrations;
-    assert.ok(api.getStats().totalBursts - bursts <= 1 + celebrated, 'bursts were rate-limited');
+    const rendered = api.getStats().totalBursts - bursts;
+    assert.ok(
+      rendered <= maxPaced(elapsed, 750) + celebrated && rendered < 5 + celebrated,
+      `${rendered} bursts (${celebrated} celebrations) in ${elapsed} ms: rate limit not applied`,
+    );
   });
 
   test('combo resets after the inactivity period', async () => {
@@ -753,8 +788,107 @@ suite('Sound', () => {
     const editor = await openFixture('long.ts');
     await placeCaret(editor, 10, 12);
     const sent = api.getStats().sound.sent;
-    await typeText('abcdef'); // faster than the 45 ms minimum gap
+    const start = Date.now();
+    await typeText('abcdef'); // typed back to back; keystroke sounds are at least 45 ms apart
+    const elapsed = Date.now() - start;
     const delta = api.getStats().sound.sent - sent;
-    assert.ok(delta >= 1 && delta < 6, `${delta}`);
+    assert.ok(delta >= 1, 'keystroke sounds are sent');
+    assert.ok(delta <= Math.min(6, maxPaced(elapsed, 45)), `${delta} sounds in ${elapsed} ms`);
+  });
+});
+
+suite('Phase 11 regressions', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  test('anchor below the visible area falls back to a rising burst (notVisible)', async () => {
+    const api = await getApi();
+    await config().update('performance.maxBurstsPerSecond', 30, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 0, 0, vscode.TextEditorRevealType.AtTop);
+    const lastVisible = Math.max(...editor.visibleRanges.map((r) => r.end.line));
+    const caretLine = lastVisible - 1;
+    const { fontSize, lineHeight } = editorFontMetrics(editor.document);
+    const needed = linesBelowFor(MAX_HALF_EXTENT, lineHeight, fontSize);
+    assert.ok(
+      caretLine + needed < editor.document.lineCount - 1,
+      `test precondition: the fixture must extend past the visible area (visible to ${lastVisible})`,
+    );
+    // Move the caret to the bottom of the viewport without scrolling.
+    editor.selection = new vscode.Selection(caretLine, 5, caretLine, 5);
+    await wait(300);
+    const before = api.getStats().totalBursts;
+    await typeText('z');
+    await waitFor(() => api.getStats().totalBursts > before, 3000, 'burst');
+    assert.deepStrictEqual(api.getStats().lastBurst?.decisions[0], {
+      mode: 'caret',
+      variant: 'upward',
+      reason: 'notVisible',
+    });
+  });
+
+  test('closed documents leave no edit-time record behind (cursor effects)', async () => {
+    const api = await getApi();
+    const doc = await vscode.workspace.openTextDocument({
+      content: 'temporary',
+      language: 'plaintext',
+    });
+    const editor = await vscode.window.showTextDocument(doc);
+    await placeCaret(editor, 0, 9);
+    await typeText('x');
+    const withDoc = api.getStats().cursorEffects.trackedDocuments;
+    assert.ok(withDoc >= 1);
+    await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+    await waitFor(
+      () => api.getStats().cursorEffects.trackedDocuments < withDoc,
+      5000,
+      'edit-time entry released on close',
+    );
+  });
+
+  test('changing the palette releases cached Impact Pulse flash types', async () => {
+    const api = await getApi();
+    await config().update('screenShake.enabled', true, vscode.ConfigurationTarget.Global);
+    await config().update('combo.milestones', [3], vscode.ConfigurationTarget.Global);
+    await config().update('combo.resetTime', 800, vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await wait(900);
+    const celebrations = api.getStats().celebrations;
+    await typeText('abc', 40);
+    await waitFor(() => api.getStats().celebrations === celebrations + 1, 2000, 'milestone');
+    await waitFor(() => api.getStats().flashTypes > 0, 2000, 'flash types created');
+    await config().update('colors', ['#123456', '#abcdef'], vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getStats().flashTypes === 0, 2000, 'flash types released');
+  });
+});
+
+suite('Performance: no endless animation while idle', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  test('the cursor aura pulses while the caret is active and rests as a static image when idle', async function () {
+    this.timeout(AURA_REST_MS + 15_000);
+    const api = await getApi();
+    await config().update('cursor.effect', 'glow', vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await waitFor(() => api.getStats().cursorEffects.auraAnimated, 2000, 'pulsing aura shown');
+    const shownAt = Date.now();
+    await waitFor(
+      () => !api.getStats().cursorEffects.auraAnimated,
+      AURA_REST_MS + 3000,
+      'aura rests when the caret is idle',
+    );
+    assert.ok(Date.now() - shownAt >= AURA_REST_MS - 500, 'rests only after the idle delay');
+    assert.ok(api.getStats().cursorEffects.auraVisible, 'the resting aura stays visible');
+    await placeCaret(editor, 11, 3);
+    await waitFor(
+      () => api.getStats().cursorEffects.auraAnimated,
+      2000,
+      'pulses again on activity',
+    );
   });
 });
