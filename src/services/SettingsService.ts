@@ -75,6 +75,12 @@ export class SettingsService implements vscode.Disposable {
     await this.update('preset', id);
   }
 
+  /** Removes one setting from user and workspace scope (falls back to the preset or default). */
+  async resetKey(key: SettingKey): Promise<void> {
+    await this.clearKey(vscode.workspace.getConfiguration(CONFIG_SECTION), key);
+    this.reload();
+  }
+
   /** Removes every KeyBlaze setting from user and workspace scope. */
   async resetAll(): Promise<void> {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);

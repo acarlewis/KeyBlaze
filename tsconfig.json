@@ -19,5 +19,5 @@
     "types": ["node", "mocha"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
-  "exclude": ["node_modules", "dist", "out", ".vscode-test", "test/fixtures"]
+  "exclude": ["node_modules", "dist", "out", ".vscode-test", "test/fixtures", "src/webview"]
 }

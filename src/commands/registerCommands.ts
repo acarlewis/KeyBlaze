@@ -3,6 +3,7 @@ import { EFFECT_DESCRIPTIONS, EFFECT_LABELS } from '../config/labels';
 import { PRESETS } from '../config/presets';
 import type { EffectId, PresetId } from '../config/schema';
 import { EFFECT_IDS, PRESET_IDS } from '../config/schema';
+import type { ControlPanelProvider } from '../providers/ControlPanelProvider';
 import type { DecorationSlotPool } from '../services/DecorationRenderer';
 import type { EffectsController } from '../services/EffectsController';
 import type { SettingsService } from '../services/SettingsService';
@@ -13,6 +14,7 @@ export const COMMAND_IDS = {
   enable: 'keyblaze.enable',
   disable: 'keyblaze.disable',
   toggle: 'keyblaze.toggle',
+  openControlPanel: 'keyblaze.openControlPanel',
   changeEffect: 'keyblaze.changeEffect',
   nextEffect: 'keyblaze.nextEffect',
   previousEffect: 'keyblaze.previousEffect',
@@ -27,6 +29,7 @@ export interface CommandDeps {
   readonly effects: EffectsController;
   readonly pool: DecorationSlotPool;
   readonly logger: Logger;
+  readonly controlPanel: ControlPanelProvider;
 }
 
 export interface ResetOptions {
@@ -71,6 +74,7 @@ export function registerCommands(deps: CommandDeps): vscode.Disposable[] {
     register(COMMAND_IDS.enable, () => settings.update('enabled', true)),
     register(COMMAND_IDS.disable, () => settings.update('enabled', false)),
     register(COMMAND_IDS.toggle, () => settings.update('enabled', !settings.get().enabled)),
+    register(COMMAND_IDS.openControlPanel, () => deps.controlPanel.show()),
 
     register(COMMAND_IDS.nextEffect, () => setEffect(cycle(EFFECT_IDS, settings.get().effect, 1))),
     register(COMMAND_IDS.previousEffect, () =>

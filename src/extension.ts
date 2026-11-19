@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { registerCommands } from './commands/registerCommands';
 import type { KeyBlazeSettings } from './config/schema';
+import { ControlPanelProvider } from './providers/ControlPanelProvider';
 import { ComboIndicator } from './services/ComboIndicator';
 import { ComboService } from './services/ComboService';
 import { CursorEffects } from './services/CursorEffects';
@@ -33,7 +34,10 @@ export interface KeyBlazeApi {
     comboBadgeRenders: number;
     celebrations: number;
     cursorEffects: { auraVisible: boolean; oneShots: number };
+    controlPanel: ControlPanelProvider['stats'];
   };
+  /** Test hook: feed a raw message to the Control Panel host handler. */
+  sendControlPanelMessage(message: unknown): Promise<boolean>;
 }
 
 export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
@@ -48,6 +52,7 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
   const impact = new ImpactPulse(settings, combo, effects, logger);
   const cursorEffects = new CursorEffects(settings, detector, inlayHints, logger);
   const statusBar = new StatusBarService(settings, combo);
+  const controlPanel = new ControlPanelProvider(context, settings, combo, logger);
 
   context.subscriptions.push(
     logger,
@@ -61,7 +66,8 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
     impact,
     cursorEffects,
     statusBar,
-    ...registerCommands({ context, settings, effects, pool, logger }),
+    controlPanel,
+    ...registerCommands({ context, settings, effects, pool, logger, controlPanel }),
   );
 
   logger.info(`KeyBlaze activated (VS Code ${vscode.version}).`);
@@ -80,7 +86,9 @@ export function activate(context: vscode.ExtensionContext): KeyBlazeApi {
       comboBadgeRenders: comboIndicator.renderCount,
       celebrations: impact.celebrationCount,
       cursorEffects: cursorEffects.stats,
+      controlPanel: controlPanel.stats,
     }),
+    sendControlPanelMessage: (message) => controlPanel.onMessage(message),
   };
 }
 

@@ -1,4 +1,4 @@
-// Bundles the extension host code into a single file. Webview bundles are added in Phase 6.
+// Bundles the extension host code (Node, CJS) and the Control Panel webview (browser, IIFE).
 import * as esbuild from 'esbuild';
 
 const production = process.argv.includes('--production');
@@ -19,6 +19,20 @@ const problemMatcherPlugin = {
   },
 };
 
+const webview = await esbuild.context({
+  entryPoints: ['src/webview/controlPanel.ts'],
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: 'es2022',
+  outfile: 'dist/webview/controlPanel.js',
+  sourcemap: !production,
+  sourcesContent: false,
+  minify: production,
+  logLevel: 'silent',
+  plugins: [problemMatcherPlugin],
+});
+
 const ctx = await esbuild.context({
   entryPoints: ['src/extension.ts'],
   bundle: true,
@@ -35,8 +49,8 @@ const ctx = await esbuild.context({
 });
 
 if (watch) {
-  await ctx.watch();
+  await Promise.all([ctx.watch(), webview.watch()]);
 } else {
-  await ctx.rebuild();
-  await ctx.dispose();
+  await Promise.all([ctx.rebuild(), webview.rebuild()]);
+  await Promise.all([ctx.dispose(), webview.dispose()]);
 }

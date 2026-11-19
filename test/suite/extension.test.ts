@@ -473,3 +473,105 @@ suite('Cursor effects', () => {
     assert.ok(!api.getStats().cursorEffects.auraVisible);
   });
 });
+
+suite('Control Panel', () => {
+  setup(resetSettings);
+  suiteTeardown(async () => {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await resetSettings();
+  });
+
+  test('opens a webview whose script loads and completes a message round trip', async () => {
+    const api = await getApi();
+    await vscode.commands.executeCommand('keyblaze.openControlPanel');
+    await waitFor(() => api.getStats().controlPanel.ready > 0, 10000, 'webview ready');
+    const stats = api.getStats().controlPanel;
+    assert.ok(stats.open);
+    assert.ok(stats.statesPosted > 0);
+  });
+
+  test('re-running the command reveals the same panel', async () => {
+    const api = await getApi();
+    await vscode.commands.executeCommand('keyblaze.openControlPanel');
+    await waitFor(() => api.getStats().controlPanel.ready > 0, 10000, 'webview ready');
+    const ready = api.getStats().controlPanel.ready;
+    await vscode.commands.executeCommand('keyblaze.openControlPanel');
+    await wait(300);
+    assert.strictEqual(api.getStats().controlPanel.ready, ready, 'no second webview was created');
+  });
+
+  test('valid updates are written to the settings', async () => {
+    const api = await getApi();
+    assert.ok(await api.sendControlPanelMessage({ type: 'update', key: 'intensity', value: 8 }));
+    assert.strictEqual(api.getSettings().intensity, 8);
+    assert.ok(
+      await api.sendControlPanelMessage({ type: 'update', key: 'colors', value: ['#123456'] }),
+    );
+    assert.deepStrictEqual(api.getSettings().colors, ['#123456']);
+  });
+
+  test('invalid values and malformed messages are rejected without side effects', async () => {
+    const api = await getApi();
+    const rejected = api.getStats().controlPanel.rejected;
+    assert.strictEqual(
+      await api.sendControlPanelMessage({ type: 'update', key: 'effect', value: 'plasma' }),
+      false,
+    );
+    assert.strictEqual(
+      await api.sendControlPanelMessage({ type: 'update', key: 'colors', value: ['red'] }),
+      false,
+    );
+    assert.strictEqual(
+      await api.sendControlPanelMessage({ type: 'command', command: 'rm -rf' }),
+      false,
+    );
+    assert.strictEqual(await api.sendControlPanelMessage('garbage'), false);
+    assert.strictEqual(api.getStats().controlPanel.rejected, rejected + 4);
+    assert.strictEqual(api.getSettings().effect, 'particles');
+    assert.strictEqual(config().inspect('colors')?.globalValue, undefined);
+  });
+
+  test('out-of-range numbers are clamped by the schema before writing', async () => {
+    const api = await getApi();
+    assert.ok(
+      await api.sendControlPanelMessage({ type: 'update', key: 'particleCount', value: 999 }),
+    );
+    assert.strictEqual(config().inspect('particleCount')?.globalValue, 40);
+  });
+
+  test('applyPreset and resetKey work through the panel', async () => {
+    const api = await getApi();
+    await api.sendControlPanelMessage({ type: 'update', key: 'effect', value: 'stars' });
+    assert.ok(await api.sendControlPanelMessage({ type: 'applyPreset', id: 'lightningStrike' }));
+    assert.strictEqual(api.getSettings().preset, 'lightningStrike');
+    assert.strictEqual(api.getSettings().effect, 'lightning');
+    await api.sendControlPanelMessage({ type: 'update', key: 'particleSize', value: 9 });
+    assert.ok(await api.sendControlPanelMessage({ type: 'resetKey', key: 'particleSize' }));
+    assert.strictEqual(config().inspect('particleSize')?.globalValue, undefined);
+  });
+
+  test('toggle command from the panel', async () => {
+    const api = await getApi();
+    assert.ok(await api.sendControlPanelMessage({ type: 'command', command: 'toggle' }));
+    assert.strictEqual(api.getSettings().enabled, false);
+    await api.sendControlPanelMessage({ type: 'command', command: 'toggle' });
+    assert.strictEqual(api.getSettings().enabled, true);
+  });
+
+  test('settings changes push a fresh state to an open panel', async () => {
+    const api = await getApi();
+    await vscode.commands.executeCommand('keyblaze.openControlPanel');
+    await waitFor(() => api.getStats().controlPanel.ready > 0, 10000, 'ready');
+    const before = api.getStats().controlPanel.statesPosted;
+    await config().update('particleSpeed', 2, vscode.ConfigurationTarget.Global);
+    await waitFor(() => api.getStats().controlPanel.statesPosted > before, 3000, 'state push');
+  });
+
+  test('closing the panel disposes it', async () => {
+    const api = await getApi();
+    await vscode.commands.executeCommand('keyblaze.openControlPanel');
+    await wait(200);
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    await waitFor(() => !api.getStats().controlPanel.open, 3000, 'disposed');
+  });
+});

@@ -7,9 +7,18 @@ export function svgDocument(width: number, height: number, body: string): string
   );
 }
 
-/** Encodes an SVG document as a base64 `data:` URI string. */
+/** Encodes an SVG document as a base64 `data:` URI string (works in Node ≥ 18 and in webviews). */
 export function svgToDataUri(svg: string): string {
-  return `data:image/svg+xml;base64,${Buffer.from(svg, 'utf8').toString('base64')}`;
+  return `data:image/svg+xml;base64,${base64Utf8(svg)}`;
+}
+
+export function base64Utf8(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 /** Percent-encoded (non-base64) variant, used by the rendering spike for comparison. */
