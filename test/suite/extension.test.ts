@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { KeystrokeEvent } from '../../src/services/TypingDetector';
 import { linesBelowFor } from '../../src/core/placement';
 import { qualityProfile } from '../../src/core/quality';
+import { AURA_REST_MS } from '../../src/services/CursorEffects';
 import { editorFontMetrics } from '../../src/services/EditorMetrics';
 import {
   CONTRIBUTED_COMMANDS,
@@ -860,5 +861,34 @@ suite('Phase 11 regressions', () => {
     await waitFor(() => api.getStats().flashTypes > 0, 2000, 'flash types created');
     await config().update('colors', ['#123456', '#abcdef'], vscode.ConfigurationTarget.Global);
     await waitFor(() => api.getStats().flashTypes === 0, 2000, 'flash types released');
+  });
+});
+
+suite('Performance: no endless animation while idle', () => {
+  setup(resetSettings);
+  teardown(closeAllEditors);
+  suiteTeardown(resetSettings);
+
+  test('the cursor aura pulses while the caret is active and rests as a static image when idle', async function () {
+    this.timeout(AURA_REST_MS + 15_000);
+    const api = await getApi();
+    await config().update('cursor.effect', 'glow', vscode.ConfigurationTarget.Global);
+    const editor = await openFixture('long.ts');
+    await placeCaret(editor, 10, 12);
+    await waitFor(() => api.getStats().cursorEffects.auraAnimated, 2000, 'pulsing aura shown');
+    const shownAt = Date.now();
+    await waitFor(
+      () => !api.getStats().cursorEffects.auraAnimated,
+      AURA_REST_MS + 3000,
+      'aura rests when the caret is idle',
+    );
+    assert.ok(Date.now() - shownAt >= AURA_REST_MS - 500, 'rests only after the idle delay');
+    assert.ok(api.getStats().cursorEffects.auraVisible, 'the resting aura stays visible');
+    await placeCaret(editor, 11, 3);
+    await waitFor(
+      () => api.getStats().cursorEffects.auraAnimated,
+      2000,
+      'pulses again on activity',
+    );
   });
 });

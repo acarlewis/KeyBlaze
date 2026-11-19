@@ -37,7 +37,7 @@ export interface KeyBlazeApi {
     comboBadgeVisible: boolean;
     comboBadgeRenders: number;
     celebrations: number;
-    cursorEffects: { auraVisible: boolean; oneShots: number; trackedDocuments: number };
+    cursorEffects: CursorEffects['stats'];
     flashTypes: number;
     controlPanel: ControlPanelProvider['stats'];
     policy: MotionPolicy;

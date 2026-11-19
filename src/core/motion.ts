@@ -74,6 +74,17 @@ export function reducedMotionOverrides(
   };
 }
 
+/**
+ * The settings a burst is rendered with under the motion policy: unchanged, or calmed by
+ * reducedMotionOverrides. Used by the Control Panel preview so it shows what the editor shows.
+ */
+export function withMotionPolicy<T extends Pick<EngineSettings, 'particleCount' | 'particleSize'>>(
+  s: T,
+  reducedMotion: boolean,
+): T {
+  return reducedMotion ? { ...s, ...reducedMotionOverrides(s) } : s;
+}
+
 export function describeInactive(reason: InactiveReason | undefined): string {
   switch (reason) {
     case 'disabled':
