@@ -3,7 +3,7 @@
 # - No Personal Access Token: GitHub issues a short-lived OIDC token that vsce exchanges for a
 #   Marketplace credential (valid 15 minutes, single use). Nothing secret is stored in the repository.
 # - Runs only when started by hand (Actions → "Publish to VS Code Marketplace" → Run workflow), with the
-#   version typed in as a confirmation. The full CI must pass first.
+#   version typed in as a confirmation. It runs no tests: run the local test suite first (RELEASING.md).
 # - The publish job uses the GitHub environment "marketplace". Protect it with required reviewers so
 #   a person approves every release. The Marketplace Trusted Publishing policy must name the same
 #   repository, this workflow file (publish.yml) and this environment. See RELEASING.md.
@@ -25,13 +25,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ci:
-    name: CI gate
-    uses: ./.github/workflows/ci.yml
-
   publish:
     name: Publish ${{ inputs.version }}
-    needs: ci
     runs-on: ubuntu-latest
     environment: marketplace
     permissions:

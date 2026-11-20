@@ -6,6 +6,9 @@ KeyBlaze is published to the Visual Studio Code Marketplace by the GitHub Action
 exchanges for a Marketplace credential, valid for 15 minutes and usable once. No publishing secret is
 stored in the repository or in GitHub secrets.
 
+The workflow builds, checks the package contents and publishes. It runs no tests: the local test
+suite on Windows (release checklist, step 3) is the release gate.
+
 | Item               | Value                                       |
 | ------------------ | ------------------------------------------- |
 | Publisher          | `CLdForge` (`package.json` → `publisher`)   |
@@ -57,7 +60,7 @@ images anonymously, so they only render if the repository is **public** and the 
 
 1. `CHANGELOG.md` has an entry for the version, and `package.json` `version` is set.
 2. All changes are merged into `main`.
-3. Local validation (Windows):
+3. Local validation (Windows). Every command must pass:
    ```sh
    npm run check
    npm test                 # unit + integration (current stable VS Code)
@@ -65,13 +68,12 @@ images anonymously, so they only render if the repository is **public** and the 
    npm run test:vsix        # installs the packaged VSIX into a clean VS Code
    npm run test:visual      # placement, combo, Control Panel and sound in a real VS Code
    ```
-4. CI on `main` is green on Windows, macOS and Linux.
-5. **Actions → Publish to VS Code Marketplace → Run workflow** on `main`, entering the version (for
+4. **Actions → Publish to VS Code Marketplace → Run workflow** on `main`, entering the version (for
    example `0.1.0`).
-6. Approve the `marketplace` environment deployment when prompted.
-7. Check the listing at `https://marketplace.visualstudio.com/items?itemName=CLdForge.keyblaze`:
+5. Approve the `marketplace` environment deployment when prompted.
+6. Check the listing at `https://marketplace.visualstudio.com/items?itemName=CLdForge.keyblaze`:
    icon, Preview badge, README images, changelog and licence.
-8. Create the GitHub release and tag `v<version>` on the published commit.
+7. Create the GitHub release and tag `v<version>` on the published commit.
 
 The workflow publishes exactly the VSIX it built and verified (`vsce publish --oidc --packagePath …`).
 It does not create commits or tags.

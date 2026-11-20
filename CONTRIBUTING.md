@@ -99,7 +99,7 @@ Install the result with **Extensions → … → Install from VSIX…** or
 `code --install-extension keyblaze-<version>.vsix`.
 
 `node scripts/check-package-files.mjs` (after `npm run build:prod`) verifies that the package contains
-only the allowlisted production files. CI runs it on every change.
+only the allowlisted production files. The publish workflow runs it again before publishing.
 
 The publisher (`CLdForge`) and the repository are configured in `package.json`. Every test and script
 derives the extension ID from it (`spike/lib.mjs` exports `EXTENSION_ID`). `vsce` rewrites the README's
