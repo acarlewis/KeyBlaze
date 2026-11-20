@@ -28,6 +28,11 @@ export interface EffectParams {
    * about 0.3em below the line middle), so motion is directed upward.
    */
   readonly variant: EffectVariant;
+  /**
+   * How hot the typing is, 0–1, from the current keystroke rate (core/typingRate.heatForRate).
+   * Effects may grow with it (Fire burns higher). Optional: 0 when absent.
+   */
+  readonly heat?: number;
 }
 
 /**

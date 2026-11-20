@@ -13,7 +13,7 @@ export interface Frame {
   /** Offset from the origin. */
   readonly x: number;
   readonly y: number;
-  /** Particle: size multiplier. Ring: radius in px. Bolt: scale multiplier. */
+  /** Particle: size multiplier. Ring: radius in px. Bolt: scale multiplier. Flame: unused (1). */
   readonly s: number;
   /** Opacity, 0–1. */
   readonly o: number;
@@ -49,7 +49,35 @@ export interface BoltElement extends ElementBase {
   readonly points: readonly number[];
 }
 
-export type BurstElement = ParticleElement | RingElement | BoltElement;
+/**
+ * Outline of a flame tongue at one keyframe, relative to the centre of its rounded base (+y down).
+ * Renderers build the same Bézier outline from it (render/flamePath.ts), so the editor and the
+ * preview draw identical flames, and SMIL can morph between keyframes (constant path structure).
+ */
+export interface FlameShape {
+  /** Half width of the body, px. */
+  readonly w: number;
+  /** Height from the base centre to the tip, px. */
+  readonly h: number;
+  /** Horizontal tip offset as a fraction of `h` (the tongue leans and curls), about −0.6…0.6. */
+  readonly lean: number;
+  /** Side asymmetry, −1…1 (flicker). */
+  readonly wobble: number;
+}
+
+export interface FlameElement extends ElementBase {
+  readonly kind: 'flame';
+  /** Hot core colour (inner layer). `color` is the body colour. */
+  readonly core: string;
+  /** Cool edge colour (tip and outer glow). */
+  readonly edge: string;
+  /** Draw the white-hot core layer (false for small tongues, where it would be a pixel or two). */
+  readonly hotCore: boolean;
+  /** One outline per keyframe, parallel to `frames` (frame x/y = base position, o = opacity). */
+  readonly shapes: readonly FlameShape[];
+}
+
+export type BurstElement = ParticleElement | RingElement | BoltElement | FlameElement;
 
 export interface BurstTrack {
   readonly durationMs: number;

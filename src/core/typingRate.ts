@@ -40,3 +40,8 @@ export function budgetForRate(keystrokesPerSecond: number): number {
   if (keystrokesPerSecond >= 24) return 0.5;
   return 1 - ((keystrokesPerSecond - 12) / 12) * 0.5;
 }
+
+/** Typing heat for effects: 0 at 2 keystrokes/s or slower, rising linearly to 1 at 10/s. */
+export function heatForRate(keystrokesPerSecond: number): number {
+  return Math.min(1, Math.max(0, (keystrokesPerSecond - 2) / 8));
+}

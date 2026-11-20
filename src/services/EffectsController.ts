@@ -3,7 +3,7 @@ import type { EngineSettings } from '../core/AnimationEngine';
 import { AnimationEngine } from '../core/AnimationEngine';
 import type { Milestone } from '../core/ComboManager';
 import { reducedMotionOverrides } from '../core/motion';
-import { TypingRate, budgetForRate } from '../core/typingRate';
+import { TypingRate, budgetForRate, heatForRate } from '../core/typingRate';
 import type { BurstTrack } from '../core/BurstTrack';
 import type { AnchorDecision, EffectVariant, Layout } from '../core/placement';
 import { decideAnchor, layoutBurst } from '../core/placement';
@@ -131,6 +131,7 @@ export class EffectsController implements vscode.Disposable {
         particleLifetime: Math.min(2000, Math.round(s.particleLifetime * 1.25)),
       },
       shake,
+      1,
     );
   }
 
@@ -148,8 +149,10 @@ export class EffectsController implements vscode.Disposable {
       this.burst(e.editor, e.positions, reducedMotionOverrides(s));
       return;
     }
-    // Very fast typing: smaller bursts keep the renderer inside its budget.
-    const budget = budgetForRate(this.typingRate.rate());
+    // Very fast typing: smaller bursts keep the renderer inside its budget. Typing heat lets an
+    // effect grow with the pace instead (Fire burns higher); it never adds elements.
+    const rate = this.typingRate.rate();
+    const budget = budgetForRate(rate);
     // Fewer particles and a shorter life: fewer animated images on screen at once.
     this.burst(
       e.editor,
@@ -160,6 +163,8 @@ export class EffectsController implements vscode.Disposable {
             particleLifetime: Math.max(300, Math.round(s.particleLifetime * (0.5 + 0.5 * budget))),
           }
         : {},
+      undefined,
+      heatForRate(rate),
     );
   }
 
@@ -168,6 +173,7 @@ export class EffectsController implements vscode.Disposable {
     positions: readonly vscode.Position[],
     overrides: Partial<EngineSettings> = {},
     shake?: { amplitude: number; durationMs: number },
+    heat = 0,
   ): void {
     const s = { ...this.settings.get(), ...overrides };
     const profile = qualityProfile(s['performance.quality'], s.performanceMode);
@@ -181,7 +187,10 @@ export class EffectsController implements vscode.Disposable {
     const tracks = new Map<EffectVariant, BurstTrack>();
     for (const { decision } of cursors) {
       if (!tracks.has(decision.variant)) {
-        tracks.set(decision.variant, this.engine.simulate(s, { variant: decision.variant, seed }));
+        tracks.set(
+          decision.variant,
+          this.engine.simulate(s, { variant: decision.variant, seed, heat }),
+        );
       }
     }
 

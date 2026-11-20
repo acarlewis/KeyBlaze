@@ -153,3 +153,26 @@ cursorLine`.
 
 `test/visual/verify-placement.mjs` (`npm run test:visual`) measures the real extension in VS Code over
 CDP: the burst origin versus the caret, and the text shift.
+
+## Fire: vector flame tongues
+
+Fire is drawn with a dedicated `flame` element rather than particles. Each tongue is a closed outline
+of four cubic Béziers (pointed tip, shoulders, rounded base) whose width, height, lean and asymmetry
+change on every keyframe (`ParticleEngine` `flameTrack`). The SVG renderer morphs the outline with
+SMIL (`<animate attributeName="d">`, constant command structure) and fills it with a shared vertical
+gradient (cool edge at the tip, hot colour at the base). A radial-gradient ellipse adds a white-hot
+core, and on the main tongues a soft glow. The Canvas preview draws the same geometry from
+`render/flamePath.ts`. Tongues of one burst sway together, and typing heat (keystroke rate) makes
+them burn higher.
+
+Why vectors instead of sprites:
+
+- **Animated GIF/APNG/WebP sprites** work through `contentIconPath`, but Chromium shares one
+  animation timeline per image URL. Every burst would need its own copy of the bitmap to start at
+  frame 0 (tens of kilobytes per keystroke). GIF also has only 1-bit transparency (fringes on light
+  and dark themes), and bitmaps blur at window zoom.
+- **Sprite sheets** need CSS keyframe animation of `background-position`. Decorations expose no such
+  property, and injecting raw CSS through `textDecoration` is the unsupported hack KeyBlaze avoids.
+- **Vector SMIL** keeps every burst unique (its own timeline), crisp at any zoom, fully transparent,
+  palette-driven, and inside the existing pipeline. Per animated image it costs less than the old
+  particle fire, because the images are smaller (see PERFORMANCE.md).

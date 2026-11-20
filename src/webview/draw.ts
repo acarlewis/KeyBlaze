@@ -2,8 +2,24 @@
  * Canvas 2D drawing of BurstTrack elements: the Control Panel's equivalent of SvgRenderer.
  * Shapes, glow halos, rings and bolts match the SVG output so the preview is faithful.
  */
-import type { BurstElement, BurstTrack, Frame, ShapeKind } from '../core/BurstTrack';
-import { sampleFrame } from '../render/frameSampler';
+import type {
+  BurstElement,
+  BurstTrack,
+  FlameElement,
+  FlameShape,
+  Frame,
+  ShapeKind,
+} from '../core/BurstTrack';
+import type { Ellipse, FlameStop } from '../render/flamePath';
+import {
+  FLAME_BODY_STOPS,
+  FLAME_CORE_STOPS,
+  FLAME_GLOW_STOPS,
+  flameCore,
+  flameGeometry,
+  flameGlow,
+} from '../render/flamePath';
+import { sampleFlameShape, sampleFrame } from '../render/frameSampler';
 
 export function drawTrack(
   ctx: CanvasRenderingContext2D,
@@ -18,7 +34,12 @@ export function drawTrack(
     if (!f || f.o <= 0.003) continue;
     ctx.save();
     ctx.translate(originX + f.x, originY + f.y);
-    drawElement(ctx, el, f, glow && el.glow > 0);
+    if (el.kind === 'flame') {
+      const shape = sampleFlameShape(el, elapsedMs, track.durationMs);
+      if (shape) drawFlame(ctx, el, shape, f.o, glow && el.glow > 0);
+    } else {
+      drawElement(ctx, el, f, glow && el.glow > 0);
+    }
     ctx.restore();
   }
 }
@@ -68,6 +89,8 @@ function drawElement(
       ctx.stroke();
       return;
     }
+    case 'flame':
+      return; // drawn by drawFlame (needs the sampled outline)
     case 'bolt': {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -90,6 +113,44 @@ function drawElement(
       return;
     }
   }
+}
+
+/** Canvas equivalent of SvgRenderer.renderFlame: same outline, layers and gradients. */
+function drawFlame(
+  ctx: CanvasRenderingContext2D,
+  el: FlameElement,
+  shape: FlameShape,
+  opacity: number,
+  glow: boolean,
+): void {
+  const colors = { core: el.core, body: el.color, edge: el.edge };
+  const ellipse = (e: Ellipse, stops: readonly FlameStop[]): void => {
+    if (e.rx <= 0 || e.ry <= 0) return;
+    ctx.save();
+    ctx.translate(e.cx, e.cy);
+    ctx.scale(e.rx, e.ry); // unit circle, like an objectBoundingBox radial gradient
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    for (const [offset, key, a] of stops) gradient.addColorStop(offset, withAlpha(colors[key], a));
+    ctx.fillStyle = gradient;
+    ctx.globalAlpha = opacity;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+  if (glow) ellipse(flameGlow(shape), FLAME_GLOW_STOPS);
+  const g = flameGeometry(shape);
+  const body = ctx.createLinearGradient(0, g.top, 0, g.bottom);
+  for (const [offset, key, a] of FLAME_BODY_STOPS)
+    body.addColorStop(offset, withAlpha(colors[key], a));
+  ctx.fillStyle = body;
+  ctx.globalAlpha = opacity;
+  ctx.beginPath();
+  ctx.moveTo(g.start[0], g.start[1]);
+  for (const c of g.curves) ctx.bezierCurveTo(c[0], c[1], c[2], c[3], c[4], c[5]);
+  ctx.closePath();
+  ctx.fill();
+  if (el.hotCore) ellipse(flameCore(shape), FLAME_CORE_STOPS);
 }
 
 function shapePath(ctx: CanvasRenderingContext2D, shape: ShapeKind, size: number): void {

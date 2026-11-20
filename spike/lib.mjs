@@ -133,8 +133,10 @@ export async function connect(url) {
   });
   let id = 0;
   const pending = new Map();
+  const listeners = new Map();
   ws.addEventListener('message', (m) => {
     const d = JSON.parse(m.data);
+    if (d.method) for (const fn of listeners.get(d.method) ?? []) fn(d.params);
     if (d.id && pending.has(d.id)) {
       const { resolve, reject } = pending.get(d.id);
       pending.delete(d.id);
@@ -149,6 +151,12 @@ export async function connect(url) {
         pending.set(i, { resolve, reject });
         ws.send(JSON.stringify({ id: i, method, params }));
       });
+    },
+    /** Subscribes to a CDP event; returns an unsubscribe function. */
+    on(method, fn) {
+      if (!listeners.has(method)) listeners.set(method, new Set());
+      listeners.get(method).add(fn);
+      return () => listeners.get(method).delete(fn);
     },
     close: () => ws.close(),
   };

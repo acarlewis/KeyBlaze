@@ -1,5 +1,6 @@
 // Captures README screenshots: every preset while typing in a real VS Code (several bursts in flight).
 // Usage: npm run build && node test/visual/capture-gallery.mjs   → docs/images/presets/*.png
+//        ONLY=firestorm node test/visual/capture-gallery.mjs     → one preset
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, key, launch, measure, poc, sleep } from '../../spike/lib.mjs';
@@ -45,7 +46,8 @@ try {
   await poc('config', { section: 'keyblaze', key: 'performance.maxBurstsPerSecond', value: 20 });
   await sleep(1500);
   fs.mkdirSync(OUT, { recursive: true });
-  for (const preset of PRESETS) {
+  // ONLY=<preset> re-captures a single preset (e.g. after changing one effect).
+  for (const preset of PRESETS.filter((p) => !process.env.ONLY || p === process.env.ONLY)) {
     await poc('config', { section: 'keyblaze', key: 'preset', value: preset });
     await poc('cursor', { line: 5, char: 2 });
     await sleep(900);

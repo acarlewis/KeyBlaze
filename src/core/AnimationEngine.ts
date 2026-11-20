@@ -70,6 +70,8 @@ export interface BurstRequestOptions {
   readonly budgetScale?: number;
   /** `upward` for caret-anchored placement (see core/placement.ts). Defaults to `full`. */
   readonly variant?: EffectVariant;
+  /** Typing heat, 0–1 (see EffectParams.heat). */
+  readonly heat?: number;
 }
 
 export interface EngineStats {
@@ -117,6 +119,7 @@ export class AnimationEngine {
       profile,
       options.budgetScale ?? 1,
       options.variant ?? 'full',
+      options.heat ?? 0,
     );
     const rng = mulberry32(options.seed ?? this.seeds());
     return this.particles.simulate((emitter) => effect.spawn(emitter, params), {
@@ -149,6 +152,7 @@ export function buildEffectParams(
   profile: QualityProfile,
   budgetScale = 1,
   variant: EffectVariant = 'full',
+  heat = 0,
 ): EffectParams {
   const scale = profile.particleScale * clampScale(budgetScale);
   return {
@@ -162,5 +166,6 @@ export function buildEffectParams(
     shape: settings.particleShape,
     glow: profile.glow,
     variant,
+    heat: Math.min(1, Math.max(0, heat)),
   };
 }
