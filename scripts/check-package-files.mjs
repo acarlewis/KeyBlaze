@@ -1,6 +1,6 @@
 // Release guard: verifies the exact file list `vsce` will package.
 // Every packaged file must match the allowlist (no sources, tests, maps or dev tooling), and every
-// required file must be present. Run after `npm run build:prod` (CI and the publish workflow do).
+// required file must be present. Run after `npm run build:prod` (the publish workflow does).
 // Usage: node scripts/check-package-files.mjs
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';

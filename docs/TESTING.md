@@ -43,12 +43,9 @@ Every visual and VSIX script exits with a non-zero code when any check fails or 
   when the lines it needs are on screen. The placement integration tests therefore close the
   secondary side bar and the panel, reveal the caret at the top of the editor, and check that
   precondition explicitly, so a window that is too small fails with a clear message instead of a
-  misleading placement result. On Linux CI, `xvfb-run` gets a 1280x1024 screen (its default is
-  640x480).
+  misleading placement result.
 - Rate-limited behaviour is asserted with exact upper bounds derived from the elapsed time and the
   configured minimum gap, not from assumed keystroke speed.
-- On GitHub Actions, failing integration tests are reported as workflow annotations
-  (`test/suite/ciAnnotations.test.ts`), which are readable without signing in.
 
 ## Requirement → tests
 
@@ -89,10 +86,7 @@ These are things automation can't judge, or that need hardware or environments n
 - **Linux (static checks):** `npm run check`, unit tests, coverage, the production build and packaging
   also pass on Linux (Ubuntu under WSL 2, case-sensitive file system, Node 22). Linux **integration**
   tests haven't run locally, because the machine lacks VS Code's GUI libraries.
-- **CI:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs the checks and unit tests on
-  Windows, macOS and Linux, the integration suites on all three against VS Code stable and 1.90.0, and
-  the packaging guard. It runs on pushes to `main` and on pull requests. macOS and Linux count as
-  supported only once those jobs pass.
+- **Automated testing:** none. All suites run manually on Windows 11 (see the commands above).
 - **Not yet tested:** macOS, Linux integration, remote and Codespaces environments, VS Code Insiders
   and VSCodium.
 - **Not supported:** VS Code for the Web (vscode.dev). The extension has no `browser` entry point.
