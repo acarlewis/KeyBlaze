@@ -2,7 +2,7 @@
   "name": "keyblaze",
   "displayName": "KeyBlaze",
   "description": "Make Every Keystroke Count. Particle bursts, fire, lightning, fireworks, combos and cursor effects as you type, built on supported VS Code APIs.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "preview": true,
   "publisher": "CLdForge",
   "license": "MIT",
