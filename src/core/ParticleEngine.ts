@@ -9,6 +9,8 @@ import type {
   BoltElement,
   BurstElement,
   BurstTrack,
+  FlameElement,
+  FlameShape,
   Frame,
   ParticleElement,
   RingElement,
@@ -80,11 +82,45 @@ export interface BoltInit {
   flicker?: number;
 }
 
+export interface FlameInit {
+  /** Base centre (px from the origin). */
+  x?: number;
+  y?: number;
+  /** Velocity (px/s), buoyancy (`ay` < 0 rises) and damping, as for particles. */
+  vx?: number;
+  vy?: number;
+  ay?: number;
+  drag?: number;
+  /** Half width and height at full size, px. */
+  width: number;
+  height: number;
+  /** How much the tongue lengthens over its life (0.5 = 50 % taller before it dies down). */
+  stretch?: number;
+  /** Lean amplitude as a fraction of the height (sway of the tip). */
+  curl?: number;
+  /** Sideways sway of the whole tongue, px. */
+  sway?: number;
+  /** Sway phase in radians. Tongues of one fire share a phase, so they sway together. Random if absent. */
+  phase?: number;
+  /** Shape and brightness flicker, 0–1. */
+  flicker?: number;
+  /** Body, hot core and cool edge colours. */
+  color: string;
+  core: string;
+  edge: string;
+  /** Draw the white-hot core layer (default true). */
+  hotCore?: boolean;
+  glow?: number;
+  delay?: number;
+  life?: number;
+}
+
 export interface Emitter {
   readonly rng: Random;
   particle(init: ParticleInit): void;
   ring(init: RingInit): void;
   bolt(init: BoltInit): void;
+  flame(init: FlameInit): void;
 }
 
 export interface SimulationOptions {
@@ -144,6 +180,7 @@ export class ParticleEngine {
     const particles: ParticleInit[] = [];
     const rings: RingInit[] = [];
     const bolts: BoltInit[] = [];
+    const flames: FlameInit[] = [];
     let total = 0;
     const accept = (): boolean => total++ < options.maxElements;
 
@@ -158,9 +195,17 @@ export class ParticleEngine {
       bolt: (b) => {
         if (accept()) bolts.push(b);
       },
+      flame: (f) => {
+        if (accept()) flames.push(f);
+      },
     });
 
+    const substeps = Math.max(1, options.substeps ?? 4);
     const elements: BurstElement[] = [
+      // Flames first: later elements (embers, sparks) are drawn on top of them.
+      ...flames.map((f) =>
+        flameTrack(f, keyframes, substeps, options.durationMs / 1000, options.rng),
+      ),
       ...this.simulateParticles(particles, keyframes, options),
       ...rings.map((r) => ringTrack(r, keyframes, options.durationMs / 1000)),
       ...bolts.map((b) => boltTrack(b, keyframes, options.rng)),
@@ -322,6 +367,88 @@ function boltTrack(init: BoltInit, keyframes: number, rng: Random): BoltElement 
 }
 
 /**
+ * A flame tongue: buoyant motion like a particle, plus an outline per keyframe that swells in,
+ * stretches upwards, leans and curls with the sway, flickers, then narrows and dies down.
+ */
+function flameTrack(
+  init: FlameInit,
+  keyframes: number,
+  substeps: number,
+  seconds: number,
+  rng: Random,
+): FlameElement {
+  const randomPhase = rng() * Math.PI * 2;
+  const phase = init.phase ?? randomPhase;
+  // Slow enough that the tip sways and curls instead of flapping between keyframes.
+  const swayHz = 1.6 + rng() * 1.6;
+  const flicker = init.flicker ?? 0.6;
+  const stretch = init.stretch ?? 0.5;
+  const curl = init.curl ?? 0.25;
+  const delay = init.delay ?? 0;
+  let x = init.x ?? 0;
+  let y = init.y ?? 0;
+  let vx = init.vx ?? 0;
+  let vy = init.vy ?? 0;
+  const ay = init.ay ?? 0;
+  const damp = init.drag ?? 0;
+  const dt = seconds / ((keyframes - 1) * substeps);
+  const frames: Frame[] = [];
+  const shapes: FlameShape[] = [];
+  for (let k = 0; k < keyframes; k++) {
+    const t = k / (keyframes - 1);
+    if (k > 0) {
+      for (let step = 0; step < substeps; step++) {
+        const now = ((k - 1) * substeps + step) * dt;
+        if (now / seconds < delay) continue;
+        vy += ay * dt;
+        if (damp > 0) {
+          const d = Math.exp(-damp * dt);
+          vx *= d;
+          vy *= d;
+        }
+        x += vx * dt;
+        y += vy * dt;
+      }
+    }
+    const local = localLife(t, delay, init.life);
+    const alive = local >= 0 && local <= 1;
+    const c = Math.min(1, Math.max(0, local));
+    const n1 = rng();
+    const n2 = rng();
+    const n3 = rng();
+    const age = Math.max(0, t - delay) * seconds;
+    // Swell in quickly (ease-out), then narrow and finally collapse.
+    const grow = 0.3 + 0.7 * (1 - (1 - Math.min(1, c / 0.2)) ** 2);
+    const wf = grow * (1 - 0.62 * c ** 1.6) * (1 + flicker * (n1 - 0.5) * 0.3);
+    const hf = grow * (1 + stretch * c) * (1 - 0.55 * c ** 2.4) * (1 + flicker * (n2 - 0.5) * 0.45);
+    const swing = Math.sin(phase + age * swayHz * Math.PI * 2 * 0.5);
+    const lean = Math.max(-0.6, Math.min(0.6, curl * swing + flicker * (n3 - 0.5) * 0.12));
+    let opacity = 0;
+    if (alive) {
+      opacity = Math.min(1, c / 0.1) * (c < 0.5 ? 1 : (1 - (c - 0.5) / 0.5) ** 1.3);
+      opacity *= 1 - flicker * 0.18 * n1;
+    }
+    frames.push({ x: x + (init.sway ?? 0) * swing * (0.4 + c), y, s: 1, o: opacity, r: 0 });
+    shapes.push({
+      w: init.width * Math.max(0.05, wf),
+      h: init.height * Math.max(0.1, hf),
+      lean,
+      wobble: (n3 - 0.5) * 2 * flicker,
+    });
+  }
+  return {
+    kind: 'flame',
+    color: init.color,
+    core: init.core,
+    edge: init.edge,
+    hotCore: init.hotCore ?? true,
+    glow: init.glow ?? 0,
+    frames,
+    shapes,
+  };
+}
+
+/**
  * Extents over all visible frames, each clamped to `max` and at least 4px:
  * `halfWidth` (symmetric horizontally, so the origin stays centred on the caret), `up` and `down`.
  */
@@ -344,6 +471,18 @@ export function measure(
         grow(f.x, f.y, el.size * f.s * (el.glow > 0 ? 2.5 : 1) + 1);
       } else if (el.kind === 'ring') {
         grow(f.x, f.y, f.s + el.strokeWidth * (el.glow > 0 ? 3 : 1));
+      } else if (el.kind === 'flame') {
+        // Conservative box of the outline and its glow ellipse (render/flamePath.ts flameExtents).
+        const shape = el.shapes[el.frames.indexOf(f)];
+        if (!shape) continue;
+        const glow = el.glow > 0;
+        const half = Math.max(
+          Math.abs(shape.lean * shape.h) + shape.w * 1.25,
+          glow ? shape.w * 1.55 : 0,
+        );
+        hw = Math.max(hw, Math.abs(f.x) + half + 1);
+        up = Math.max(up, -f.y + shape.h * (glow ? 1.02 : 1) + 1);
+        down = Math.max(down, f.y + Math.max(shape.w * 0.65, glow ? shape.h * 0.22 : 0) + 1);
       } else {
         const pad = el.width * (el.glow > 0 ? 3 : 1);
         for (let i = 0; i + 1 < el.points.length; i += 2) {

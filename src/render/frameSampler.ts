@@ -3,7 +3,7 @@
  * which is exactly how the SVG renderer's SMIL `values` lists animate (calcMode="linear", no keyTimes).
  * The Canvas preview uses this, so the preview and the editor show the same motion. Pure.
  */
-import type { BurstElement, Frame } from '../core/BurstTrack';
+import type { BurstElement, FlameElement, FlameShape, Frame } from '../core/BurstTrack';
 
 export function sampleFrame(
   element: BurstElement,
@@ -27,5 +27,29 @@ export function sampleFrame(
     s: a.s + (b.s - a.s) * u,
     o: a.o + (b.o - a.o) * u,
     r: a.r + (b.r - a.r) * u,
+  };
+}
+
+/** Samples a flame outline at an arbitrary time, interpolating its keyframes like SMIL does. */
+export function sampleFlameShape(
+  element: FlameElement,
+  elapsedMs: number,
+  durationMs: number,
+): FlameShape | undefined {
+  const shapes = element.shapes;
+  const n = shapes.length;
+  if (n === 0) return undefined;
+  if (elapsedMs >= durationMs) return shapes[n - 1];
+  const position = (Math.max(0, elapsedMs) / Math.max(1, durationMs)) * (n - 1);
+  const i = Math.min(n - 2, Math.floor(position));
+  const a = shapes[i];
+  const b = shapes[i + 1];
+  if (!a || !b) return shapes[0];
+  const u = position - i;
+  return {
+    w: a.w + (b.w - a.w) * u,
+    h: a.h + (b.h - a.h) * u,
+    lean: a.lean + (b.lean - a.lean) * u,
+    wobble: a.wobble + (b.wobble - a.wobble) * u,
   };
 }

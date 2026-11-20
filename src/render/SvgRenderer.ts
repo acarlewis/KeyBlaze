@@ -9,11 +9,21 @@ import type {
   BoltElement,
   BurstElement,
   BurstTrack,
+  FlameElement,
   Frame,
   ParticleElement,
   RingElement,
   ShapeKind,
 } from '../core/BurstTrack';
+import type { Ellipse, FlameStop } from './flamePath';
+import {
+  FLAME_BODY_STOPS,
+  FLAME_CORE_STOPS,
+  FLAME_GLOW_STOPS,
+  flameCore,
+  flameGlow,
+  flamePath,
+} from './flamePath';
 import { escapeXml, fmt, shakeAnimation, svgDocument } from './svg';
 
 export interface RenderedSvg {
@@ -76,7 +86,83 @@ function renderElement(
       return renderRing(el, dur, options);
     case 'bolt':
       return renderBolt(el, dur, options);
+    case 'flame':
+      return renderFlame(el, dur, options, defs);
   }
+}
+
+/**
+ * A flame tongue: its outline morphs per keyframe (SMIL `d`), the group moves and fades. Layers, back
+ * to front: a soft glow (high quality only), the gradient body and a white-hot core. The glow and
+ * core are ellipses with radial gradients: soft edges for little markup. Gradients use
+ * objectBoundingBox units, so they follow the shapes as they change, and they are shared by every
+ * tongue with the same colours.
+ */
+function renderFlame(
+  el: FlameElement,
+  dur: string,
+  options: SvgRenderOptions,
+  defs: Map<string, string>,
+): string {
+  const colors = { core: el.core, body: el.color, edge: el.edge };
+  const gradient = (kind: string, stops: readonly FlameStop[], radial: boolean): string => {
+    const id = `f${kind}${gradientId(el.edge + el.color + el.core).slice(1)}`;
+    if (!defs.has(id)) {
+      const xml = stops
+        .map(
+          ([offset, key, opacity]) =>
+            `<stop offset="${fmt(offset)}" stop-color="${escapeXml(colors[key])}" stop-opacity="${fmt(opacity)}"/>`,
+        )
+        .join('');
+      defs.set(
+        id,
+        radial
+          ? `<radialGradient id="${id}">${xml}</radialGradient>`
+          : `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">${xml}</linearGradient>`,
+      );
+    }
+    return id;
+  };
+  const ellipse = (fill: string, shapes: readonly Ellipse[]): string => {
+    const e0 = shapes[0] ?? { cx: 0, cy: 0, rx: 0, ry: 0 };
+    const anim = (attr: 'cy' | 'rx' | 'ry'): string =>
+      animate(
+        attr,
+        shapes.map((e) => fmt(Math.round(e[attr] * 10) / 10)),
+        dur,
+      );
+    return (
+      `<ellipse cx="${fmt(e0.cx)}" cy="${fmt(e0.cy)}" rx="${fmt(e0.rx)}" ry="${fmt(e0.ry)}" fill="url(#${fill})">` +
+      `${anim('cy')}${anim('rx')}${anim('ry')}</ellipse>`
+    );
+  };
+  const f0 = el.frames[0] ?? ZERO;
+  const paths = el.shapes.map(flamePath);
+  const glow =
+    options.glow && el.glow > 0
+      ? ellipse(gradient('g', FLAME_GLOW_STOPS, true), el.shapes.map(flameGlow))
+      : '';
+  const body =
+    `<path d="${paths[0] ?? ''}" fill="url(#${gradient('b', FLAME_BODY_STOPS, false)})">` +
+    `${animate('d', paths, dur)}</path>`;
+  const core = el.hotCore
+    ? ellipse(gradient('c', FLAME_CORE_STOPS, true), el.shapes.map(flameCore))
+    : '';
+  const motion =
+    animateTransform(
+      'translate',
+      el.frames.map((f) => `${fmt(f.x)},${fmt(f.y)}`),
+      dur,
+    ) +
+    animate(
+      'opacity',
+      el.frames.map((f) => fmt(f.o)),
+      dur,
+    );
+  return (
+    `<g transform="translate(${fmt(f0.x)} ${fmt(f0.y)})" opacity="${fmt(f0.o)}">` +
+    `${glow}${body}${core}${motion}</g>`
+  );
 }
 
 function renderParticle(

@@ -68,6 +68,12 @@ core. Windows 11, high-refresh (≥ 144 Hz) display, genuine keystrokes at 8 per
 - **Reduced motion:** Cosmic Explosion typing drops from 178 % to 97 %, and the cursor aura is static.
   **Screen reader optimisation:** 38 %, the same as with KeyBlaze disabled.
 
+The Fire effect (Firestorm) was redrawn with vector flame tongues. Measured back to back against the
+previous particle fire at 8 keystrokes per second, it uses 223–232 % CPU against 203–219 %, about 5 %
+more and within run-to-run variation. The extension host stays at 9–12 %. Each animated flame image
+costs about 30 % less than an old fire image (smaller images). The difference comes from typing
+heat, which makes sustained typing burn higher.
+
 ### Cursor aura at rest
 
 The glow and ring cursor effects (also part of Firestorm, Starfall and Neon Energy) pulse with a

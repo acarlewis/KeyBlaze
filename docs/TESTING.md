@@ -26,7 +26,7 @@ only**. The extension itself uses only the official VS Code API.
 
 | Suite                                                 | VS Code 1.147.0                                | VS Code 1.90.0   |
 | ----------------------------------------------------- | ---------------------------------------------- | ---------------- |
-| Unit                                                  | 289 passing                                    | n/a (no VS Code) |
+| Unit                                                  | 309 passing                                    | n/a (no VS Code) |
 | Integration                                           | 72 passing                                     | 72 passing       |
 | Placement (12 cases, asserted: ≤ 1 px, no text shift) | max dx 0.48 px · max dy 0.64 px · text shift 0 | all pass         |
 | Combo, badge, Impact Pulse, cursor auras (11 checks)  | all pass                                       | all pass         |

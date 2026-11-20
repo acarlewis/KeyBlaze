@@ -10,6 +10,7 @@ import { ComboManager, displayThreshold } from '../core/ComboManager';
 import { tierColor } from '../core/impact';
 import { withMotionPolicy } from '../core/motion';
 import { ParticleEngine } from '../core/ParticleEngine';
+import { TypingRate, heatForRate } from '../core/typingRate';
 import type { EffectVariant } from '../core/placement';
 import { qualityProfile } from '../core/quality';
 import { renderComboBadge } from '../render/ComboBadge';
@@ -47,6 +48,7 @@ export class Preview {
   private overrideUntil = 0;
   private readonly reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   private badgeKey = '';
+  private readonly typingRate = new TypingRate(() => performance.now());
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -166,6 +168,7 @@ export class Preview {
 
   private keystroke(s: KeyBlazeSettings): void {
     if (!s.enabled) return;
+    this.typingRate.hit();
     let celebrated = false;
     if (s['combo.enabled']) {
       const hit = this.combo.hit();
@@ -205,7 +208,10 @@ export class Preview {
     const s = withMotionPolicy(base, this.policyReducedMotion());
     if (!this.engine.admit(s, bypass)) return;
     const profile = qualityProfile(s['performance.quality'], s.performanceMode);
-    const track = this.engine.simulate(s, { variant: this.variant });
+    const track = this.engine.simulate(s, {
+      variant: this.variant,
+      heat: heatForRate(this.typingRate.rate()),
+    });
     this.bursts.push({ track, start: performance.now(), x, y, glow: profile.glow });
     if (this.bursts.length > s['performance.maxConcurrentBursts']) this.bursts.shift();
   }
